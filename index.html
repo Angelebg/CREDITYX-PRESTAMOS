@@ -1,0 +1,3104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CredityX - Sistema de Gestión en Tiempo Real</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 1 1 1v-2a1 1 0 0 0-1-1'/><path d='M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 1 1 1v-4'/></svg>">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+        @media (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important; /* Previene el zoom automático molesto en iOS/Android */
+            }
+            .panel-section {
+                padding-bottom: 2rem;
+            }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+/* ANIMACIONES DE TRANSICIÓN SUAVES */
+        .panel-section {
+            animation: fadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-scale-in {
+            animation: scaleIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        /* IMPRESIÓN CENTRADA Y OPTIMIZADA PARA RECIBO */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+            html, body {
+                height: 100vh !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                background: white !important;
+            }
+            body * {
+                visibility: hidden !important;
+            }
+            #modal-recibo, #modal-recibo * {
+                visibility: visible !important;
+            }
+            #modal-recibo {
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background: white !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                z-index: 99999 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+            }
+            #modal-recibo-imprimir {
+                position: relative !important;
+                width: 100% !important;
+                max-width: 400px !important;
+                background: white !important;
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+                border-radius: 1.5rem !important;
+                padding: 24px !important;
+                margin: auto !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-900/5 font-sans text-slate-800 pb-20 sm:pb-16 antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- ==================== PANTALLA DE AUTENTICACIÓN ==================== -->
+    <div id="auth-screen" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-3.5 sm:p-4 overflow-y-auto transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-auto transition-all transform scale-100">
+            <div class="text-center mb-6">
+                <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 w-16 h-16 rounded-2xl text-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="wallet" class="w-8 h-8"></i>
+                </div>
+                <h1 class="font-black text-2xl text-slate-900 tracking-tight">CredityX</h1>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Plataforma Multiusuario en Tiempo Real</p>
+            </div>
+
+<!-- Formulario de Login -->
+            <form id="formLogin" onsubmit="iniciarSesion(event)" autocomplete="off" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Usuario</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                        </span>
+                        <input type="text" id="login-usuario" required placeholder="Tu nombre de usuario" class="w-full pl-10 pr-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Contraseña</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                        </span>
+                        <input type="password" id="login-password" required placeholder="••••••••" autocomplete="new-password" class="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition">
+                        <button type="button" 
+                            onmousedown="mostrarPassword('login-password', 'icon-eye-login')" 
+                            onmouseup="ocultarPassword('login-password', 'icon-eye-login')" 
+                            onmouseleave="ocultarPassword('login-password', 'icon-eye-login')"
+                            ontouchstart="mostrarPassword('login-password', 'icon-eye-login')"
+                            ontouchend="ocultarPassword('login-password', 'icon-eye-login')"
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none">
+                            <i id="icon-eye-login" data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Mensaje de error integrado y dinámico -->
+                    <p id="error-login-msg" class="text-xs text-red-500 font-semibold mt-2 hidden items-center gap-1">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> 
+                        <span id="error-login-texto">Contraseña incorrecta. Por favor, verifícala.</span>
+                    </p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs pt-1">
+                    <button type="button" onclick="abrirModalRecuperar()" class="text-indigo-600 hover:text-indigo-800 font-semibold transition flex items-center gap-1"><i data-lucide="help-circle" class="w-3.5 h-3.5"></i>¿Olvidaste tu contraseña?</button>
+                    <button type="button" onclick="cambiarModoAuth('registro')" class="text-slate-500 hover:text-slate-800 font-semibold transition flex items-center gap-1"><i data-lucide="user-plus" class="w-3.5 h-3.5"></i>Crear cuenta nueva</button>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-indigo-600/25 text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="log-in" class="w-4 h-4"></i> Iniciar Sesión
+                </button>
+            </form>
+
+            <!-- Formulario de Registro -->
+            <form id="formRegistro" onsubmit="registrarCuenta(event)" autocomplete="off" class="space-y-4 hidden">
+                <div class="bg-indigo-50/80 border border-indigo-100 p-3 rounded-2xl text-xs text-indigo-800 font-medium leading-relaxed flex items-start gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5"></i>
+                    <span>Configura tu propia pregunta de seguridad para poder recuperar tu acceso si lo olvidas.</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Usuario</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i data-lucide="user" class="w-4 h-4"></i></span>
+                        <input type="text" id="reg-usuario" required placeholder="Ej. juan_prestamos" class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Contraseña</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i data-lucide="lock" class="w-4 h-4"></i></span>
+                        <input type="password" id="reg-password" required placeholder="••••••••" autocomplete="new-password" class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none">
+                        <button type="button" 
+                            onmousedown="mostrarPassword('reg-password', 'icon-eye-reg')" 
+                            onmouseup="ocultarPassword('reg-password', 'icon-eye-reg')" 
+                            onmouseleave="ocultarPassword('reg-password', 'icon-eye-reg')"
+                            ontouchstart="mostrarPassword('reg-password', 'icon-eye-reg')"
+                            ontouchend="ocultarPassword('reg-password', 'icon-eye-reg')"
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none">
+                            <i id="icon-eye-reg" data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Pregunta de Seguridad</label>
+                    <input type="text" id="reg-pregunta" required placeholder="Ej. ¿Nombre de tu primera mascota?" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Respuesta Secreta</label>
+                    <input type="text" id="reg-respuesta" required placeholder="Tu respuesta clave" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none">
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <button type="button" onclick="cambiarModoAuth('login')" class="text-indigo-600 hover:underline font-semibold flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Volver al login</button>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-emerald-600/25 text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="user-check" class="w-4 h-4"></i> Registrar Cuenta
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL CONFIGURACIÓN CON MENÚ DE PESTAÑAS ==================== -->
+    <div id="modal-mi-cuenta" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3.5 sm:p-4 overflow-y-auto transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-7 shadow-2xl border border-slate-100 my-auto max-h-[90vh] overflow-y-auto custom-scrollbar transform transition-all">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <i data-lucide="user-cog" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-bold text-base sm:text-lg text-slate-800">Mi Cuenta & Seguridad</h3>
+                </div>
+                <button onclick="cerrarModalMiCuenta()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <!-- Menú Desplegable / Pestañas de Selección -->
+            <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1.5 rounded-2xl mb-5">
+                <button type="button" id="btn-pestana-password" onclick="seleccionarPestanaConfig('password')" class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 bg-white text-indigo-600 shadow-xs">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i> Contraseña
+                </button>
+                <button type="button" id="btn-pestana-pregunta" onclick="seleccionarPestanaConfig('pregunta')" class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900">
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Pregunta Secreta
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- FORMULARIO 1: CAMBIAR CONTRASEÑA -->
+                <form id="formCambiarPassword" onsubmit="guardarNuevaPassword(event)" class="space-y-3.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80">
+                    <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="lock" class="w-4 h-4 text-indigo-600"></i> Actualizar Contraseña</h4>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Contraseña Actual</label>
+                        <input type="password" id="pass-actual" required placeholder="••••••••" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Nueva Contraseña</label>
+                        <input type="password" id="pass-nueva" required placeholder="••••••••" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-xs transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="key" class="w-3.5 h-3.5"></i> Guardar Nueva Contraseña
+                    </button>
+                </form>
+
+                <!-- FORMULARIO 2: CAMBIAR PREGUNTA DE SEGURIDAD -->
+                <form id="formCambiarPregunta" onsubmit="guardarNuevaPreguntaSeguridad(event)" class="space-y-3.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 hidden">
+                    <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="help-circle" class="w-4 h-4 text-indigo-600"></i> Actualizar Pregunta Secreta</h4>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Nueva Pregunta</label>
+                        <input type="text" id="cuenta-pregunta-input" required placeholder="Ej. ¿Ciudad donde naciste?" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Nueva Respuesta Secreta</label>
+                        <input type="text" id="cuenta-respuesta-input" required placeholder="Tu respuesta clave" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs shadow-xs transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Guardar Pregunta Secreta
+                    </button>
+                </form>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end">
+                <button type="button" onclick="cerrarModalMiCuenta()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs transition">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL COPIA DE SEGURIDAD (BACKUP & RESTORE) ==================== -->
+    <div id="modal-backup" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3.5 sm:p-4 overflow-y-auto transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-7 shadow-2xl border border-slate-100 my-auto transform transition-all">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <i data-lucide="database-backup" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-bold text-base sm:text-lg text-slate-800">Copia de Seguridad (Backup)</h3>
+                </div>
+                <button onclick="cerrarModalBackup()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="space-y-4 text-xs text-slate-600">
+                <p>Protege tu información descargando una copia de seguridad local de tus clientes, préstamos y pagos en formato JSON, o restaura un respaldo previo.</p>
+
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                    <h4 class="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5"><i data-lucide="download" class="w-4 h-4 text-indigo-600"></i> Descargar Respaldo</h4>
+                    <p>Genera y descarga un archivo cifrado con todos tus datos en tiempo real.</p>
+                    <button type="button" onclick="descargarBackupJSON()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-xs transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> Descargar Archivo JSON
+                    </button>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                    <h4 class="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5"><i data-lucide="upload" class="w-4 h-4 text-emerald-600"></i> Restaurar Respaldo</h4>
+                    <p>Selecciona un archivo JSON previo para cargar los datos en tu cuenta.</p>
+                    <input type="file" id="input-archivo-backup" accept=".json" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                    <button type="button" onclick="restaurarBackupJSON()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-xs transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="upload" class="w-3.5 h-3.5"></i> Cargar y Restaurar Datos
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end">
+                <button type="button" onclick="cerrarModalBackup()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs transition">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL DE RECUPERACIÓN ==================== -->
+    <div id="modal-recuperar" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3.5 sm:p-4 overflow-y-auto transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto transform transition-all">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-base sm:text-lg text-slate-800 flex items-center gap-2"><i data-lucide="key-round" class="w-5 h-5 text-indigo-600"></i> Recuperar Contraseña</h3>
+                <button onclick="cerrarModalRecuperar()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div id="recuperar-paso-1" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Ingresa tu usuario</label>
+                    <input type="text" id="rec-usuario-input" placeholder="Tu nombre de usuario" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="button" onclick="buscarPreguntaRecuperacion()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2"><i data-lucide="arrow-right" class="w-4 h-4"></i> Siguiente</button>
+            </div>
+
+            <div id="recuperar-paso-2" class="space-y-4 hidden">
+                <div class="bg-indigo-50/80 p-3 rounded-2xl border border-indigo-100 text-xs text-indigo-900">
+                    <p class="font-bold mb-1 flex items-center gap-1"><i data-lucide="help-circle" class="w-3.5 h-3.5 text-indigo-600"></i> Tu Pregunta Personalizada:</p>
+                    <p id="rec-pregunta-label" class="italic font-semibold text-indigo-700">-</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Tu Respuesta Secreta</label>
+                    <input type="text" id="rec-respuesta-input" placeholder="Escribe tu respuesta" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nueva Contraseña</label>
+                    <input type="password" id="rec-nueva-pass" placeholder="••••••••" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="cerrarModalRecuperar()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-1"><i data-lucide="x-circle" class="w-4 h-4"></i> Cancelar</button>
+                    <button type="button" onclick="cambiarPasswordConPregunta()" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> Cambiar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL DE CAPITALIZACIÓN ==================== -->
+    <div id="modal-capitalizar" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3.5 sm:p-4 overflow-y-auto transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto transform transition-all">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-base sm:text-lg text-slate-800 flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-indigo-600"></i> Capitalizar Intereses</h3>
+                <button onclick="cerrarModalCapitalizar()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="formCapitalizar" onsubmit="ejecutarCapitalizacion(event)" class="space-y-4">
+                <input type="hidden" id="cap-prestamo-id">
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1">
+                    <p><strong>Interés Pendiente Máximo:</strong> $<span id="cap-modal-maximo" class="font-bold text-amber-600">0.00</span></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Modo de Capitalización</label>
+                    <select id="cap-modo" onchange="cambiarModoCapitalizacion()" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                        <option value="maximo">Máximo (Todo el interés pendiente)</option>
+                        <option value="personalizado">Personalizado (Elegir monto)</option>
+                    </select>
+                </div>
+                <div id="contenedor-cap-monto" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Monto a Capitalizar ($)</label>
+                    <input type="number" id="cap-monto-input" step="0.01" placeholder="Ej. 25.00" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="cerrarModalCapitalizar()" class="w-1/2 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1"><i data-lucide="x-circle" class="w-4 h-4"></i> Cancelar</button>
+                    <button type="submit" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm shadow-md flex items-center justify-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<!-- ==================== COMPROBANTE / RECIBO FINTECH PREMIUM ==================== -->
+    <div id="modal-recibo" class="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 overflow-y-auto transition-all duration-300">
+        <div id="modal-recibo-imprimir" class="bg-white rounded-[2.5rem] max-w-sm w-full p-7 shadow-2xl border border-slate-100 my-auto relative overflow-hidden transform transition-all font-sans">
+            
+            <!-- Elemento decorativo superior de fondo tipo gradiente -->
+            <div class="absolute top-0 left-0 right-0 h-24 bg-gradient-to-br from-indigo-50 via-violet-50/50 to-transparent pointer-events-none"></div>
+
+            <!-- Botón Cerrar (Oculto al imprimir) -->
+            <button type="button" onclick="cerrarModalRecibo()" class="no-print absolute top-5 right-5 text-slate-400 hover:text-slate-700 bg-white hover:bg-slate-100 p-2 rounded-full shadow-sm border border-slate-200/60 transition z-10">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Cabecera Corporativa -->
+            <div class="relative text-center pt-2 pb-5 border-b border-slate-100">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-500/30 mb-2.5">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <h2 class="font-black text-xl text-slate-900 tracking-tight">Credity<span class="text-indigo-600">X</span></h2>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Comprobante de Pago Oficial</p>
+                
+                <div class="mt-3 inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 font-mono text-[11px] font-bold px-3 py-1 rounded-full">
+                    <i data-lucide="hash" class="w-3 h-3 text-slate-400"></i><span id="recibo-id">REC-00000</span>
+                </div>
+            </div>
+
+            <!-- Tarjeta Central del Monto Recibido -->
+            <div class="my-5 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-5 text-center shadow-xl relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 opacity-10">
+                    <i data-lucide="badge-percent" class="w-28 h-28 text-white"></i>
+                </div>
+                <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase block mb-1">Monto Total Abonado</span>
+                <div id="recibo-monto" class="text-3xl font-black tracking-tight text-emerald-400">$0.00</div>
+                
+                <div class="mt-3 inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold px-3 py-1 rounded-full">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Pago Exitoso Verificado
+                </div>
+            </div>
+
+            <!-- Detalles de la Transacción -->
+            <div class="space-y-3 text-xs bg-slate-50/80 p-4 rounded-2xl border border-slate-100">
+                <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                    <span class="text-slate-400 font-medium flex items-center gap-1.5">
+                        <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i> Cliente
+                    </span>
+                    <span id="recibo-cliente" class="font-bold text-slate-900 text-right truncate max-w-[180px]">-</span>
+                </div>
+
+                <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                    <span class="text-slate-400 font-medium flex items-center gap-1.5">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i> Fecha de Pago
+                    </span>
+                    <span id="recibo-fecha" class="font-bold text-slate-800 text-right">-</span>
+                </div>
+
+                <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                    <span class="text-slate-400 font-medium flex items-center gap-1.5">
+                        <i data-lucide="tag" class="w-3.5 h-3.5 text-slate-400"></i> Concepto
+                    </span>
+                    <span id="recibo-tipo" class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-md text-[11px] uppercase">-</span>
+                </div>
+
+                <div class="flex justify-between items-center py-1">
+                    <span class="text-slate-400 font-medium flex items-center gap-1.5">
+                        <i data-lucide="wallet" class="w-3.5 h-3.5 text-slate-400"></i> Capital Restante
+                    </span>
+                    <span id="recibo-capital-restante" class="font-black text-slate-900 text-sm">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Sello Digital / Footer -->
+            <div class="mt-5 pt-3 border-t border-dashed border-slate-200 text-center">
+                <p class="text-[10px] text-slate-400 font-medium flex items-center justify-center gap-1">
+                    <i data-lucide="lock" class="w-3 h-3 text-indigo-500"></i> Resguardo digital emitido por CredityX
+                </p>
+            </div>
+
+            <!-- Botones de Acción (Ocultos al imprimir) -->
+            <div class="no-print mt-6 space-y-2">
+                <div class="flex gap-2">
+                    <button type="button" onclick="window.print()" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-3 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir / PDF
+                    </button>
+                    <button type="button" onclick="enviarReciboWhatsApp()" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-3 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
+                    </button>
+                </div>
+                <button type="button" onclick="cerrarModalRecibo()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-2xl text-xs transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="x" class="w-4 h-4"></i> Cerrar Comprobante
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ==================== APLICACIÓN PRINCIPAL ==================== -->
+    <div id="main-app" class="hidden">
+        <!-- Navegación Superior -->
+        <nav class="bg-slate-900 text-white sticky top-0 z-40 shadow-xl border-b border-slate-800 transition-all">
+            <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+                <div class="flex items-center gap-2.5">
+                    <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-2 rounded-2xl text-white shrink-0 shadow-md shadow-indigo-500/20">
+                        <i data-lucide="wallet" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h1 class="font-black text-base sm:text-lg leading-tight tracking-tight">CredityX</h1>
+                        <p class="text-[10px] sm:text-xs text-indigo-300 font-medium truncate max-w-[100px] sm:max-w-none" id="sesion-usuario-label">Gestión</p>
+                    </div>
+                </div>
+                
+                <!-- BOTONES DE ESCRITORIO (OCULTOS EN MÓVIL) -->
+                <div class="hidden md:flex items-center gap-1 sm:gap-2">
+                    <button onclick="cambiarPanel('admin-maestro')" id="nav-admin-maestro" class="nav-btn hover:bg-slate-800 text-indigo-200 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold hidden items-center gap-1.5 transition-all duration-200" title="Admin Maestro">
+                        <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i> <span>Admin</span>
+                    </button>
+
+                    <button onclick="cambiarPanel('dashboard')" id="nav-dashboard" class="nav-btn bg-indigo-600 text-white p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 shadow-sm" title="Dashboard">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> <span>Dash</span>
+                    </button>
+                    <button onclick="cambiarPanel('clientes')" id="nav-clientes" class="nav-btn hover:bg-slate-800 text-indigo-200 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200" title="Clientes">
+                        <i data-lucide="users" class="w-4 h-4"></i> <span>Clientes</span>
+                    </button>
+                    <button onclick="cambiarPanel('nuevo-prestamo')" id="nav-nuevo-prestamo" class="nav-btn hover:bg-slate-800 text-indigo-200 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200" title="Nuevo Préstamo">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> <span>Nuevo</span>
+                    </button>
+                    <button onclick="cambiarPanel('cobros')" id="nav-cobros" class="nav-btn hover:bg-slate-800 text-indigo-200 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200" title="Cobranzas">
+                        <i data-lucide="hand-coins" class="w-4 h-4"></i> <span>Cobros</span>
+                    </button>
+                    
+                    <button onclick="abrirModalBackup()" title="Copia de Seguridad" class="bg-slate-800 hover:bg-indigo-600 text-indigo-200 hover:text-white p-2 sm:p-2.5 rounded-xl transition-all duration-200 flex items-center ml-1">
+                        <i data-lucide="database-backup" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="abrirModalMiCuenta()" title="Mi Cuenta & Seguridad" class="bg-slate-800 hover:bg-indigo-600 text-indigo-200 hover:text-white p-2 sm:p-2.5 rounded-xl transition-all duration-200 flex items-center">
+                        <i data-lucide="user-cog" class="w-4 h-4"></i>
+                    </button>
+
+                    <button onclick="cerrarSesion()" title="Cerrar Sesión" class="bg-slate-950 hover:bg-red-600 text-indigo-200 hover:text-white p-2 sm:p-2.5 rounded-xl transition-all duration-200 flex items-center">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- BOTÓN DE MENÚ MÓVIL (LAS 3 RAYITAS) -->
+                <div class="flex md:hidden items-center gap-1">
+                    <button onclick="toggleMenuMovil()" class="bg-slate-800 hover:bg-indigo-600 text-indigo-200 hover:text-white p-2.5 rounded-xl transition-all duration-200 flex items-center justify-center">
+                        <i id="icono-menu-movil" data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- MENÚ DESPLEGABLE MÓVIL (LAS 3 RAYITAS) -->
+            <div id="menu-movil-desplegable" class="hidden md:hidden bg-slate-900 border-t border-slate-800 px-4 py-4 space-y-2 shadow-2xl transition-all duration-300">
+                <button onclick="cambiarPanelMovil('admin-maestro')" id="nav-movil-admin-maestro" class="nav-btn-movil w-full hover:bg-slate-800 text-indigo-200 p-3 rounded-xl text-xs font-semibold hidden items-center gap-3 transition">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i> Admin Maestro
+                </button>
+                <button onclick="cambiarPanelMovil('dashboard')" id="nav-movil-dashboard" class="nav-btn-movil w-full bg-indigo-600 text-white p-3 rounded-xl text-xs font-semibold flex items-center gap-3 transition shadow-sm">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard (Dash)
+                </button>
+                <button onclick="cambiarPanelMovil('clientes')" id="nav-movil-clientes" class="nav-btn-movil w-full hover:bg-slate-800 text-indigo-200 p-3 rounded-xl text-xs font-semibold flex items-center gap-3 transition">
+                    <i data-lucide="users" class="w-4 h-4"></i> Clientes
+                </button>
+                <button onclick="cambiarPanelMovil('nuevo-prestamo')" id="nav-movil-nuevo-prestamo" class="nav-btn-movil w-full hover:bg-slate-800 text-indigo-200 p-3 rounded-xl text-xs font-semibold flex items-center gap-3 transition">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuevo Préstamo
+                </button>
+                <button onclick="cambiarPanelMovil('cobros')" id="nav-movil-cobros" class="nav-btn-movil w-full hover:bg-slate-800 text-indigo-200 p-3 rounded-xl text-xs font-semibold flex items-center gap-3 transition">
+                    <i data-lucide="hand-coins" class="w-4 h-4"></i> Cobranzas
+                </button>
+
+                <div class="border-t border-slate-800 pt-2 grid grid-cols-3 gap-2 pt-2">
+                    <button onclick="abrirModalBackup(); toggleMenuMovil();" class="bg-slate-800 hover:bg-indigo-600 text-indigo-200 p-3 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-1 transition">
+                        <i data-lucide="database-backup" class="w-4 h-4"></i> Backup
+                    </button>
+                    <button onclick="abrirModalMiCuenta(); toggleMenuMovil();" class="bg-slate-800 hover:bg-indigo-600 text-indigo-200 p-3 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-1 transition">
+                        <i data-lucide="user-cog" class="w-4 h-4"></i> Cuenta
+                    </button>
+                    <button onclick="cerrarSesion()" class="bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white p-3 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-1 transition">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> Salir
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-4 sm:mt-6 transition-all duration-300">
+            <!-- PANEL: ADMIN MAESTRO -->
+            <section id="panel-admin-maestro" class="panel-section hidden space-y-6">
+                <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-slate-800 relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
+                        <div>
+                            <div class="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold px-3.5 py-1 rounded-full mb-3">
+                                <i data-lucide="shield-check" class="w-4 h-4 text-indigo-400"></i> Consola de Super Administrador
+                            </div>
+                            <h2 class="text-xl sm:text-3xl font-black tracking-tight text-white">Panel de Control Global</h2>
+                            <p class="text-xs sm:text-sm text-slate-300 mt-1">Supervisa y administra el acceso de todos los prestamistas registrados en la red.</p>
+                        </div>
+                        <div class="flex items-center gap-3 bg-white/5 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 shrink-0">
+                            <div class="p-2.5 bg-indigo-600 text-white rounded-xl shadow-md"><i data-lucide="users" class="w-5 h-5"></i></div>
+                            <div>
+                                <p class="text-[10px] text-indigo-200 uppercase tracking-wider font-bold">Total Cuentas</p>
+                                <h3 id="admin-total-cuentas" class="text-lg sm:text-xl font-black text-white">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-5 sm:p-7">
+                    <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
+                        <h3 class="font-bold text-base sm:text-lg text-slate-800 flex items-center gap-2">
+                            <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i> Listado de Prestamistas Activos
+                        </h3>
+                        <span class="text-xs text-slate-400 font-medium">Sincronización automática</span>
+                    </div>
+
+                    <div class="overflow-x-auto -mx-5 sm:mx-0 px-5 sm:px-0 custom-scrollbar">
+                        <table class="w-full text-left border-collapse min-w-[700px]">
+                                <thead>
+                                <tr class="bg-slate-50 text-slate-500 uppercase text-[11px] font-bold border-b border-slate-200">
+                                    <th class="p-3.5 rounded-l-xl">Prestamista</th>
+                                    <th class="p-3.5">Estado de Suscripción</th>
+                                    <th class="p-3.5">Última Actividad</th>
+                                    <th class="p-3.5 text-center">Renovar Plan</th>
+                                    <th class="p-3.5 text-center">Acción de Acceso</th>
+                                    <th class="p-3.5 text-center rounded-r-xl">Eliminar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-prestamistas-admin" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+<!-- PANEL 1: DASHBOARD REDISEÑADO PARA MÓVIL Y DESKTOP -->
+            <section id="panel-dashboard" class="panel-section space-y-4 sm:space-y-6">
+                <!-- Banner Superior -->
+                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-8 text-white shadow-2xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 relative overflow-hidden">
+                    <div class="absolute -right-12 -top-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="space-y-1 relative z-10">
+                        <div class="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] sm:text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider mb-1 sm:mb-2">
+                            <i data-lucide="activity" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400"></i> Resumen Ejecutivo en Tiempo Real
+                        </div>
+                        <h2 class="text-lg sm:text-3xl font-black tracking-tight text-white">Panel de Control Financiero</h2>
+                        <p class="text-xs sm:text-sm text-indigo-200 font-medium" id="dash-hoy-fecha">-</p>
+                    </div>
+                    <div class="flex items-center gap-2.5 relative z-10 w-full md:w-auto">
+                        <button onclick="cambiarPanel('nuevo-prestamo')" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-4 py-3 rounded-2xl text-xs sm:text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Nuevo Préstamo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tarjetas de Métricas Principales (Grid Móvil de 2 Columnas) -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-indigo-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
+                        <div class="flex justify-between items-start mb-2 sm:mb-3">
+                            <span class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Capital en Calle</span>
+                            <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition"><i data-lucide="wallet" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></div>
+                        </div>
+                        <div>
+                            <h3 class="text-base sm:text-2xl font-black text-slate-900 truncate" id="dash-capital">$0.00</h3>
+                            <p class="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Activo principal</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-amber-300 transition group">
+                        <div class="flex justify-between items-start mb-2 sm:mb-3">
+                            <span class="text-[10px] sm:text-[11px] font-bold text-amber-600 uppercase tracking-wider">Intereses por Cobrar</span>
+                            <div class="p-2 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition"><i data-lucide="percent" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></div>
+                        </div>
+                        <div>
+                            <h3 class="text-base sm:text-2xl font-black text-amber-600 truncate" id="dash-intereses">$0.00</h3>
+                            <p class="text-[10px] sm:text-[11px] text-amber-500/80 mt-0.5">Pendientes acumulados</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-emerald-300 transition group">
+                        <div class="flex justify-between items-start mb-2 sm:mb-3">
+                            <span class="text-[10px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Cobrado Histórico</span>
+                            <div class="p-2 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition"><i data-lucide="badge-dollar-sign" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></div>
+                        </div>
+                        <div>
+                            <h3 class="text-base sm:text-2xl font-black text-emerald-600 truncate" id="dash-cobrado">$0.00</h3>
+                            <p class="text-[10px] sm:text-[11px] text-emerald-500/80 mt-0.5">Ingresos registrados</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-violet-300 transition group">
+                        <div class="flex justify-between items-start mb-2 sm:mb-3">
+                            <span class="text-[10px] sm:text-[11px] font-bold text-violet-600 uppercase tracking-wider">Préstamos Activos</span>
+                            <div class="p-2 bg-violet-50 text-violet-600 rounded-xl group-hover:bg-violet-600 group-hover:text-white transition"><i data-lucide="file-text" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></div>
+                        </div>
+                        <div>
+                            <h3 class="text-base sm:text-2xl font-black text-violet-600 truncate" id="dash-activos">0</h3>
+                            <p class="text-[10px] sm:text-[11px] text-violet-400 mt-0.5">Créditos en curso</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Rendimiento Financiero -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-indigo-600"></i> Rendimiento de Ingresos Mensuales
+                        </h3>
+                        <span class="text-xs text-slate-400 font-medium">Histórico de cobranzas</span>
+                    </div>
+                    <div class="w-full h-64">
+                        <canvas id="graficoIngresos"></canvas>
+                    </div>
+                </div>
+
+                <!-- PROYECCIÓN DE GANANCIAS A FUTURO -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80">
+                    <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+                                <i data-lucide="line-chart" class="w-5 h-5 text-indigo-600"></i> Proyección de Ganancias a Futuro
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Estimación de ingresos netos por cobro de intereses activos</p>
+                        </div>
+                        <span class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Pronóstico</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-3">
+                            <div class="p-3 bg-indigo-100 text-indigo-600 rounded-xl"><i data-lucide="calendar" class="w-5 h-5"></i></div>
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Próximos 7 Días</span>
+                                <strong id="cashflow-7d" class="text-lg font-black text-slate-800">$0.00</strong>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-3">
+                            <div class="p-3 bg-violet-100 text-violet-600 rounded-xl"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Próximos 15 Días</span>
+                                <strong id="cashflow-15d" class="text-lg font-black text-slate-800">$0.00</strong>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-3">
+                            <div class="p-3 bg-emerald-100 text-emerald-600 rounded-xl"><i data-lucide="trending-up" class="w-5 h-5"></i></div>
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Próximos 30 Días</span>
+                                <strong id="cashflow-30d" class="text-lg font-black text-emerald-600">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN COBROS PROGRAMADOS PARA HOY (ADAPTATIVO PC / MÓVIL) -->
+                <div class="bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-2xl border border-slate-800">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-slate-800/80">
+                        <div class="flex items-center gap-3.5">
+                            <div class="p-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl shadow-inner">
+                                <i data-lucide="calendar-check-2" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h2 class="font-black text-lg sm:text-xl tracking-tight text-white">Cobros Programados para Hoy</h2>
+                                    <span id="dash-badge-hoy" class="bg-emerald-500 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded-full shadow-md">0</span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-0.5">Cuotas prioritarias del día con opción de registro rápido o recordatorio inmediato</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl text-xs text-indigo-300 font-semibold shadow-xs">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-400"></i> 
+                            <span>Fecha: <strong id="dash-fecha-texto" class="text-white">--</strong></span>
+                        </div>
+                    </div>
+                    
+                    <div id="dash-lista-hoy" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+                </div>
+
+                <!-- Lista de Préstamos Activos Recientes -->
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-sm sm:text-lg text-slate-800 flex items-center gap-2">
+                            <i data-lucide="list-todo" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600"></i> Préstamos Activos
+                        </h2>
+                        <button onclick="cambiarPanel('nuevo-prestamo')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Crear Préstamo
+                        </button>
+                    </div>
+                    <div id="dash-lista-prestamos" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- PANEL 2: CLIENTES -->
+            <section id="panel-clientes" class="panel-section hidden">
+                <div id="vista-lista-clientes">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+                        <div>
+                            <h2 class="text-base sm:text-2xl font-black text-slate-800">Directorio de Clientes</h2>
+                            <p class="text-[11px] sm:text-sm text-slate-500">Administra expedientes individuales</p>
+                        </div>
+                        <button onclick="abrirModalNuevoCliente()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo Cliente
+                        </button>
+                    </div>
+
+                    <div class="mb-5 relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </span>
+                        <input type="text" id="input-buscar-cliente" oninput="renderizarClientes()" placeholder="Buscar cliente por nombre o cédula..." class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
+                    </div>
+
+                    <div id="grid-clientes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
+                </div>
+
+                <div id="vista-expediente-cliente" class="hidden">
+                    <button onclick="cerrarExpedienteCliente()" class="mb-4 text-slate-600 hover:text-slate-900 text-xs sm:text-sm font-semibold flex items-center gap-1">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver a clientes
+                    </button>
+                    
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-4 sm:p-6 mb-5">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4 mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-indigo-500 to-violet-500 text-white rounded-2xl flex items-center justify-center font-black text-base sm:text-xl shrink-0 shadow-md shadow-indigo-500/20" id="exp-avatar">CP</div>
+                                <div>
+                                    <h2 class="text-base sm:text-2xl font-black text-slate-800" id="exp-nombre">Nombre Cliente</h2>
+                                    <p class="text-[11px] sm:text-xs text-slate-500 font-medium" id="exp-contacto">Teléfono | Cédula</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                <button onclick="enviarWhatsAppCliente()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
+                                </button>
+                                <button onclick="abrirModalEditarClienteActual()" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i> Editar
+                                </button>
+                                <button onclick="abrirModalNuevoPrestamoParaCliente()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                                    <i data-lucide="plus" class="w-4 h-4"></i> Préstamo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- BITÁCORA DE NOTAS INTERNAS DEL CLIENTE -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-4 sm:p-6 mb-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-sm sm:text-base text-slate-800 flex items-center gap-2">
+                                <i data-lucide="notebook-pen" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600"></i> Bitácora de Gestión y Acuerdos
+                            </h3>
+                            <button onclick="guardarNotasClienteActual()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-xs flex items-center gap-1">
+                                <i data-lucide="save" class="w-3.5 h-3.5"></i> Guardar Notas
+                            </button>
+                        </div>
+                        <textarea id="exp-notas-cliente" rows="3" placeholder="Escribe aquí acuerdos de palabra, recordatorios o notas de llamadas con este cliente..." class="w-full p-3 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none custom-scrollbar"></textarea>
+                    </div>                        
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div>
+                                <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Deuda Activa</span>
+                                <p class="text-sm sm:text-lg font-black text-slate-900" id="exp-deuda-total">$0.00</p>
+                            </div>
+                            <div>
+                                <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Intereses Pendientes</span>
+                                <p class="text-sm sm:text-lg font-black text-amber-600" id="exp-interes-total">$0.00</p>
+                            </div>
+                            <div>
+                                <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase">Total Pagado Histórico</span>
+                                <p class="text-sm sm:text-lg font-black text-emerald-600" id="exp-pagado-total">$0.00</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-4 sm:p-6 mb-5">
+                        <h3 class="font-bold text-sm sm:text-base text-slate-800 mb-4 flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600"></i> Préstamos del cliente
+                        </h3>
+                        <div id="exp-lista-prestamos" class="space-y-3"></div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-4 sm:p-6 mb-5">
+                        <h3 class="font-bold text-sm sm:text-base text-slate-800 mb-4 flex items-center gap-2 text-slate-500">
+                            <i data-lucide="check-circle" class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500"></i> Préstamos Finalizados / Históricos
+                        </h3>
+                        <div id="exp-lista-prestamos-finalizados" class="space-y-3"></div>
+                    </div>
+
+                    <!-- HISTORIAL CON FILTRO DE FECHAS -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-4 sm:p-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-3 border-b border-slate-100">
+                            <h3 class="font-bold text-sm sm:text-base text-slate-800 flex items-center gap-2">
+                                <i data-lucide="history" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600"></i> Historial de Recibos y Pagos
+                            </h3>
+                            <div class="flex flex-wrap items-center gap-2 text-xs w-full sm:w-auto">
+                                <div class="flex items-center gap-1">
+                                    <span class="text-slate-400 font-semibold">Desde:</span>
+                                    <input type="date" id="filtro-fecha-desde" onchange="renderizarHistorialPagosCliente()" class="border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs bg-slate-50 focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-slate-400 font-semibold">Hasta:</span>
+                                    <input type="date" id="filtro-fecha-hasta" onchange="renderizarHistorialPagosCliente()" class="border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs bg-slate-50 focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <button onclick="limpiarFiltroFechasCliente()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1.5 rounded-xl font-semibold transition">Limpiar</button>
+                            </div>
+                        </div>
+                        <div id="exp-historial-pagos" class="space-y-2"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL 3: NUEVO PRÉSTAMO -->
+            <section id="panel-nuevo-prestamo" class="panel-section hidden">
+                <div class="max-w-3xl mx-auto bg-white p-5 sm:p-8 rounded-3xl shadow-xl border border-slate-200/80 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-500"></div>
+
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-bold shadow-sm">
+                            <i data-lucide="file-plus" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">Nuevo Préstamo Corporativo</h2>
+                            <p class="text-xs sm:text-sm text-slate-500">Configura los parámetros financieros, tasas y plazos de cobro</p>
+                        </div>
+                    </div>
+
+                    <form id="formPrestamo" class="space-y-6" oninput="calcularVistaPreviaPrestamo()">
+                        <div class="bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/60 space-y-3">
+                            <label class="block text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <i data-lucide="user-check" class="w-4 h-4 text-indigo-600"></i> 1. Seleccionar Cliente Destino
+                            </label>
+                            <select id="p-cliente-select" required class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm transition">
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/60 space-y-2">
+                                <label class="block text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i data-lucide="dollar-sign" class="w-4 h-4 text-emerald-600"></i> Monto Inicial ($)
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-bold">$</span>
+                                    <input type="number" id="p-monto" step="0.01" required placeholder="0.00" class="w-full pl-8 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-base font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm transition">
+                                </div>
+                            </div>
+                            
+                            <div class="bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/60 space-y-2">
+                                <label class="block text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i data-lucide="calendar" class="w-4 h-4 text-indigo-600"></i> Fecha de Entrega
+                                </label>
+                                <input type="date" id="p-fecha-inicio" required class="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm transition">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/60 space-y-2">
+                                <label class="block text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i data-lucide="percent" class="w-4 h-4 text-amber-600"></i> Tasa de Interés (%)
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="p-tasa" step="0.01" required placeholder="Ej. 15" class="w-full pl-4 pr-8 py-3 bg-white border border-slate-300 rounded-xl text-base font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm transition">
+                                    <span class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 font-bold">%</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/60 space-y-2">
+                                <label class="block text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i data-lucide="clock" class="w-4 h-4 text-violet-600"></i> Frecuencia de Cobro
+                                </label>
+                                <select id="p-frecuencia" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm transition">
+                                    <option value="diario">Diario (Cada 1 día)</option>
+                                    <option value="semanal" selected>Semanal (Cada 7 días)</option>
+                                    <option value="catorcenal">Catorcenal (Cada 14 días)</option>
+                                    <option value="quincenal">Quincenal (Cada 15 días)</option>
+                                    <option value="mensual">Mensual (Cada 30 días)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-indigo-900 to-slate-900 p-4 sm:p-5 rounded-2xl text-white shadow-md flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div class="space-y-1 text-center sm:text-left">
+                                <p class="text-[11px] uppercase tracking-wider text-indigo-300 font-bold">Simulación de Interés por Período</p>
+                                <h3 class="text-xl sm:text-2xl font-black text-emerald-400" id="preview-interes">$0.00</h3>
+                            </div>
+                            <div class="text-center sm:text-right border-t sm:border-t-0 sm:border-l border-indigo-800 pt-3 sm:pt-0 sm:pl-5 w-full sm:w-auto">
+                                <p class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Total por Cuota Completa</p>
+                                <h3 class="text-xl sm:text-2xl font-black text-white" id="preview-total">$0.00</h3>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-black py-4 rounded-2xl transition shadow-lg shadow-indigo-600/30 flex justify-center items-center gap-2 text-sm sm:text-base uppercase tracking-wider">
+                            <i data-lucide="check-circle-2" class="w-5 h-5"></i> Autorizar y Guardar Préstamo
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+<!-- PANEL 4: COBRANZAS -->
+            <section id="panel-cobros" class="panel-section hidden space-y-4 sm:space-y-6">
+                <!-- Indicadores compactos en móvil -->
+                <div class="grid grid-cols-3 gap-2 sm:gap-4">
+                    <div class="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
+                        <div class="p-2 sm:p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i data-lucide="wallet" class="w-4 h-4 sm:w-6 sm:h-6"></i></div>
+                        <div class="overflow-hidden">
+                            <p class="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">Total Cobros</p>
+                            <h3 id="cobros-stat-total" class="text-xs sm:text-xl font-black text-slate-900 truncate">$0.00</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
+                        <div class="p-2 sm:p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i data-lucide="calendar-check" class="w-4 h-4 sm:w-6 sm:h-6"></i></div>
+                        <div class="overflow-hidden">
+                            <p class="text-[9px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider truncate">Hoy</p>
+                            <h3 id="cobros-stat-hoy" class="text-xs sm:text-xl font-black text-emerald-600 truncate">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
+                        <div class="p-2 sm:p-3 bg-amber-50 text-amber-600 rounded-xl"><i data-lucide="alert-triangle" class="w-4 h-4 sm:w-6 sm:h-6"></i></div>
+                        <div class="overflow-hidden">
+                            <p class="text-[9px] sm:text-[11px] font-bold text-amber-600 uppercase tracking-wider truncate">Atrasados</p>
+                            <h3 id="cobros-stat-atrasados" class="text-xs sm:text-xl font-black text-amber-600 truncate">$0.00</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-4 sm:p-7">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6 pb-3 border-b border-slate-100">
+                        <div>
+                            <h2 class="text-base sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+                                <i data-lucide="hand-coins" class="w-5 h-5 text-indigo-600"></i> Centro de Cobranzas
+                            </h2>
+                            <p class="text-[11px] sm:text-sm text-slate-500">Supervisa cuotas y filtra por estado</p>
+                        </div>
+                        <div class="w-full sm:w-auto">
+                            <select id="filtro-cobros" onchange="renderizarCobranzas()" class="w-full border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 shadow-xs">
+                                <option value="todos">Ver Todos los Activos</option>
+                                <option value="hoy">Programados para Hoy 🎯</option>
+                                <option value="atrasados">Con Intereses Pendientes ⚠️</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="lista-cobranzas-completa" class="space-y-3"></div>
+                </div>
+            </section>
+            
+    <!-- Modal Pago -->
+<div id="modal-pago" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3.5 sm:p-4 overflow-y-auto transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto transform transition-all animate-scale-in">
+            <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2.5">
+                <h3 class="font-bold text-base sm:text-lg text-slate-800 flex items-center gap-2"><i data-lucide="badge-dollar-sign" class="w-5 h-5 text-emerald-600"></i> Registrar Pago / Cobro</h3>
+                <button onclick="cerrarModalPago()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="formRegistrarPago" class="space-y-3.5 sm:space-y-4">
+                <input type="hidden" id="pago-prestamo-id">
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 text-xs text-slate-600 space-y-1">
+                    <p><strong>Cliente:</strong> <span id="pago-modal-cliente" class="font-bold text-slate-800">-</span></p>
+                    <p><strong>Capital Actual:</strong> $<span id="pago-modal-capital">0.00</span></p>
+                    <p><strong>Intereses Pendientes:</strong> $<span id="pago-modal-intereses" class="text-amber-600 font-bold">0.00</span></p>
+                </div>
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Tipo de Operación</label>
+                    <select id="pago-tipo" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                        <option value="solo_intereses">Pagar SOLO Intereses</option>
+                        <option value="cuota_completa">Pagar Cuota Completa (Intereses + Capital)</option>
+                        <option value="abono_capital">Abono Directo a Capital</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Monto Pagado ($)</label>
+                    <input type="number" id="pago-monto" step="0.01" required class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Fecha del Pago</label>
+                    <input type="date" id="pago-fecha" required class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="cerrarModalPago()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-1.5"><i data-lucide="x-circle" class="w-4 h-4"></i> Cancelar</button>
+                    <button type="submit" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-1.5"><i data-lucide="check" class="w-4 h-4"></i> Confirmar Pago</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<!-- Modal Cliente -->
+    <div id="modal-cliente" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3.5 sm:p-4 overflow-y-auto transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto max-h-[90vh] overflow-y-auto custom-scrollbar transform transition-all animate-scale-in">
+            <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2.5">
+                <h3 id="modal-cliente-titulo" class="font-bold text-base sm:text-lg text-slate-800 flex items-center gap-2"><i data-lucide="user-plus" class="w-5 h-5 text-indigo-600"></i> Registrar Nuevo Cliente</h3>
+                <button onclick="cerrarModalNuevoCliente()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="formNuevoCliente" onsubmit="guardarClienteModal(event)" class="space-y-3.5 sm:space-y-4">
+                <input type="hidden" id="c-id-editar">
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Nombre Completo</label>
+                    <input type="text" id="c-nombre" required placeholder="Ej. Carlos Rodríguez" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- CAMPO CÉDULA CON DESPLEGABLE (V, E, J, G, P) -->
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Cédula / Identificación</label>
+                    <div class="flex gap-2">
+                        <select id="c-cedula-tipo" class="border border-slate-200 rounded-xl px-3 py-2.5 text-xs sm:text-sm bg-slate-50 font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500">
+                            <option value="V">V - Venezolano</option>
+                            <option value="E">E - Extranjero</option>
+                            <option value="J">J - Jurídico</option>
+                            <option value="G">G - Gubernamental</option>
+                            <option value="P">P - Pasaporte</option>
+                        </select>
+                        <input type="text" id="c-cedula-num" required placeholder="Ej. 12345678" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <!-- CAMPO TELÉFONO CON CAJA PARA ESCRIBIR EL CÓDIGO Y NÚMERO -->
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">Teléfono Móvil</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="c-tel-codigo" value="+58" placeholder="+58" class="w-20 text-center border border-slate-200 rounded-xl px-2 py-2.5 text-xs sm:text-sm bg-slate-50 font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" id="c-tel-num" required placeholder="Ej. 4121994196" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">Escribe tu código de país (ej. +58, +34, etc.) y tu número.</p>
+                </div>
+
+                <div class="flex gap-2 pt-3 border-t border-slate-100 mt-4">
+                    <button type="button" onclick="cerrarModalNuevoCliente()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-1.5"><i data-lucide="x-circle" class="w-4 h-4"></i> Cancelar</button>
+                    <button type="submit" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-1.5"><i data-lucide="save" class="w-4 h-4"></i> Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script Conectado a Supabase con Realtime Activado -->
+    <script>
+        const SUPABASE_URL = 'https://tecwykgdsjxrtsopevoe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlY3d5a2dkc2p4cnRzb3Bldm9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTU5NzUsImV4cCI6MjEwODczMTk3NX0.hh5cB0xQ_DIinG0d-7bcUin4b5dKA2Dmx60AurXWIZI';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let prestamistaSesion = sessionStorage.getItem('credityx_sesion_activa') || null;
+        let clientes = [];
+        let prestamos = [];
+        let pagos = [];
+        let clienteSeleccionadoId = null;
+        let usuarioTempRecuperacion = null;
+        let ultimoPagoRegistradoData = null;
+        let graficoIngresosInstance = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await verificarYCrearAdminDefault();
+            lucide.createIcons();
+            verificarSesion();
+        });
+
+        async function verificarYCrearAdminDefault() {
+            const { data } = await supabaseClient
+                .from('perfiles')
+                .select('*')
+                .eq('usuario', 'admin')
+                .limit(1);
+
+            if (!data || data.length === 0) {
+                await supabaseClient.from('perfiles').insert([{
+                    usuario: 'admin',
+                    password: 'admin123',
+                    pregunta: '¿Cuál es el nombre de tu primera mascota?',
+                    respuesta: 'admin',
+                    suscripcion_activa: true,
+                    vencimiento_suscripcion: '2099-12-31',
+                    es_super_admin: true
+                }]);
+            }
+        }
+
+        function parsearFechaLocal(strFecha) {
+            if (!strFecha) return new Date();
+            const partes = strFecha.split('-');
+            if (partes.length === 3) {
+                return new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+            }
+            const d = new Date(strFecha);
+            d.setHours(0,0,0,0);
+            return d;
+        }
+
+        function mostrarPassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            input.type = "text";
+            icon.setAttribute("data-lucide", "eye-off");
+            lucide.createIcons();
+        }
+
+        function ocultarPassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            input.type = "password";
+            icon.setAttribute("data-lucide", "eye");
+            lucide.createIcons();
+        }
+
+        // FUNCIÓN PARA ABRIR/CERRAR EL MENÚ MÓVIL (LAS 3 RAYITAS)
+        function toggleMenuMovil() {
+            const menu = document.getElementById('menu-movil-desplegable');
+            const icono = document.getElementById('icono-menu-movil');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                icono.setAttribute('data-lucide', 'x');
+            } else {
+                menu.classList.add('hidden');
+                icono.setAttribute('data-lucide', 'menu');
+            }
+            lucide.createIcons();
+        }
+
+        function cambiarPanelMovil(panelNombre) {
+            toggleMenuMovil();
+            cambiarPanel(panelNombre);
+        }
+
+        async function verificarSesion() {
+            if (prestamistaSesion) {
+                const { data } = await supabaseClient
+                    .from('perfiles')
+                    .select('*')
+                    .eq('usuario', prestamistaSesion)
+                    .limit(1);
+
+                const cuentaActual = data ? data[0] : null;
+
+                if (!cuentaActual) {
+                    mostrarToast("Tu cuenta ha sido eliminada por el administrador.");
+                    cerrarSesion();
+                    return;
+                }
+
+                if (!cuentaActual.es_super_admin) {
+                    const hoy = new Date();
+                    hoy.setHours(0,0,0,0);
+                    const fechaVen = cuentaActual.vencimiento_suscripcion ? parsearFechaLocal(cuentaActual.vencimiento_suscripcion) : hoy;
+                    const estaVencida = hoy > fechaVen;
+
+                    if (!cuentaActual.suscripcion_activa || estaVencida) {
+                        mostrarToast("⚠️ ACCESO DENEGADO: Tu suscripción está vencida o inactiva.");
+                        cerrarSesion();
+                        return;
+                    }
+                }
+
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('sesion-usuario-label').textContent = cuentaActual.es_super_admin ? `Admin Maestro` : `Usuario: ${prestamistaSesion}`;
+
+                if (cuentaActual.es_super_admin) {
+                    document.getElementById('nav-admin-maestro').classList.remove('hidden');
+                    document.getElementById('nav-admin-maestro').classList.add('flex');
+                    const navMovilAdmin = document.getElementById('nav-movil-admin-maestro');
+                    if(navMovilAdmin) {
+                        navMovilAdmin.classList.remove('hidden');
+                        navMovilAdmin.classList.add('flex');
+                    }
+                    cambiarPanel('admin-maestro');
+                } else {
+                    document.getElementById('nav-admin-maestro').classList.add('hidden');
+                    document.getElementById('nav-admin-maestro').classList.remove('flex');
+                    const navMovilAdmin = document.getElementById('nav-movil-admin-maestro');
+                    if(navMovilAdmin) {
+                        navMovilAdmin.classList.add('hidden');
+                        navMovilAdmin.classList.remove('flex');
+                    }
+                    cambiarPanel('dashboard');
+                }
+
+                await cargarDatosUsuario();
+                configurarRealtimeSupabase();
+                document.getElementById('p-fecha-inicio').valueAsDate = new Date();
+                document.getElementById('pago-fecha').valueAsDate = new Date();
+                actualizarSelectClientes();
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('main-app').classList.add('hidden');
+            }
+        }
+
+        function configurarRealtimeSupabase() {
+            supabaseClient
+                .channel('credityx-realtime')
+                .on('postgres_changes', { event: '*', schema: 'public' }, async (payload) => {
+                    await cargarDatosUsuario();
+                    refrescarInterfazActual();
+                })
+                .subscribe();
+        }
+
+        function cambiarModoAuth(modo) {
+            document.getElementById('formLogin').reset();
+            document.getElementById('formRegistro').reset();
+
+            if (modo === 'registro') {
+                document.getElementById('formLogin').classList.add('hidden');
+                document.getElementById('formRegistro').classList.remove('hidden');
+            } else {
+                document.getElementById('formRegistro').classList.add('hidden');
+                document.getElementById('formLogin').classList.remove('hidden');
+            }
+        }
+
+        async function registrarCuenta(e) {
+            e.preventDefault();
+            const user = document.getElementById('reg-usuario').value.trim().toLowerCase();
+            const pass = document.getElementById('reg-password').value.trim();
+            const pregunta = document.getElementById('reg-pregunta').value.trim();
+            const respuesta = document.getElementById('reg-respuesta').value.trim().toLowerCase();
+
+            const { data } = await supabaseClient
+                .from('perfiles')
+                .select('usuario')
+                .eq('usuario', user)
+                .limit(1);
+
+            if (data && data.length > 0) {
+                mostrarToast("Este nombre de usuario ya está en uso. Elige otro.");
+                return;
+            }
+
+            let fechaDefault = new Date();
+            fechaDefault.setDate(fechaDefault.getDate() + 30);
+            const vencimientoStr = fechaDefault.toISOString().split('T')[0];
+
+            const { error } = await supabaseClient.from('perfiles').insert([{
+                usuario: user,
+                password: pass,
+                pregunta: pregunta,
+                respuesta: respuesta,
+                suscripcion_activa: true,
+                vencimiento_suscripcion: vencimientoStr,
+                es_super_admin: false
+            }]);
+
+            if (error) {
+                mostrarToast("Error al registrar cuenta: " + error.message);
+                return;
+            }
+            
+            mostrarToast("¡Cuenta registrada con éxito en Supabase! Ya puedes iniciar sesión.");
+            cambiarModoAuth('login');
+            document.getElementById('login-usuario').value = user;
+            document.getElementById('login-password').focus();
+        }
+
+function mostrarErrorLogin(mensaje) {
+            const errorBox = document.getElementById('error-login-msg');
+            const errorTexto = document.getElementById('error-login-texto');
+            
+            if (errorBox && errorTexto) {
+                errorTexto.textContent = mensaje;
+                errorBox.classList.remove('hidden');
+                errorBox.classList.add('flex'); // Se activa el flex limpiamente aquí
+                lucide.createIcons();
+            }
+        }
+
+        async function iniciarSesion(e) {
+            e.preventDefault();
+            
+            // Ocultar error previo y limpiar flex
+            const errorBox = document.getElementById('error-login-msg');
+            if (errorBox) {
+                errorBox.classList.add('hidden');
+                errorBox.classList.remove('flex');
+            }
+
+            const user = document.getElementById('login-usuario').value.trim().toLowerCase();
+            const pass = document.getElementById('login-password').value.trim();
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('perfiles')
+                    .select('*')
+                    .eq('usuario', user)
+                    .limit(1);
+
+                if (error) {
+                    mostrarErrorLogin("Error de conexión al verificar el usuario.");
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    mostrarErrorLogin("Este usuario no está registrado.");
+                    return;
+                }
+
+                const cuentaEncontrada = data[0];
+
+                if (cuentaEncontrada.password !== pass) {
+                    mostrarErrorLogin("Contraseña incorrecta. Por favor, verifícala.");
+                    document.getElementById('login-password').value = '';
+                    document.getElementById('login-password').focus();
+                    return;
+                }
+
+                if (!cuentaEncontrada.es_super_admin) {
+                    const hoy = new Date();
+                    hoy.setHours(0,0,0,0);
+                    const fechaVen = cuentaEncontrada.vencimiento_suscripcion ? parsearFechaLocal(cuentaEncontrada.vencimiento_suscripcion) : hoy;
+                    const estaVencida = hoy > fechaVen;
+
+                    if (!cuentaEncontrada.suscripcion_activa || estaVencida) {
+                        mostrarErrorLogin("Acceso denegado. Tu suscripción está vencida o inactiva.");
+                        return;
+                    }
+                }
+
+                document.getElementById('login-password').value = '';
+                prestamistaSesion = user;
+                sessionStorage.setItem('credityx_sesion_activa', user);
+
+                await supabaseClient.from('perfiles').update({
+                    ultima_conexion: new Date().toISOString()
+                }).eq('usuario', user);
+
+                mostrarToast("¡Bienvenido de nuevo!", "success");
+                verificarSesion();
+
+            } catch (err) {
+                mostrarErrorLogin("Ocurrió un error inesperado al iniciar sesión.");
+            }
+        }
+
+        function cerrarSesion() {
+            sessionStorage.removeItem('credityx_sesion_activa');
+            prestamistaSesion = null;
+            document.getElementById('formLogin').reset();
+            document.getElementById('nav-admin-maestro').classList.add('hidden');
+            document.getElementById('nav-admin-maestro').classList.remove('flex');
+            verificarSesion();
+        }
+
+        async function abrirModalMiCuenta() {
+            if (!prestamistaSesion) return;
+            document.getElementById('pass-actual').value = '';
+            document.getElementById('pass-nueva').value = '';
+            
+            seleccionarPestanaConfig('password');
+
+            const { data } = await supabaseClient
+                .from('perfiles')
+                .select('pregunta, respuesta')
+                .eq('usuario', prestamistaSesion)
+                .limit(1);
+
+            if (data && data.length > 0) {
+                document.getElementById('cuenta-pregunta-input').value = data[0].pregunta || '';
+                document.getElementById('cuenta-respuesta-input').value = data[0].respuesta || '';
+            }
+
+            document.getElementById('modal-mi-cuenta').classList.remove('hidden');
+        }
+
+        function cerrarModalMiCuenta() {
+            document.getElementById('modal-mi-cuenta').classList.add('hidden');
+        }
+
+        function abrirModalBackup() {
+            document.getElementById('modal-backup').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function cerrarModalBackup() {
+            document.getElementById('modal-backup').classList.add('hidden');
+        }
+
+        async function descargarBackupJSON() {
+            if (!prestamistaSesion) return;
+            const { data: resC } = await supabaseClient.from('clientes').select('*').eq('usuario', prestamistaSesion);
+            const { data: resP } = await supabaseClient.from('prestamos').select('*').eq('usuario', prestamistaSesion);
+            const { data: resG } = await supabaseClient.from('pagos').select('*').eq('usuario', prestamistaSesion);
+
+            const backupData = {
+                usuario: prestamistaSesion,
+                fechaBackup: new Date().toISOString(),
+                clientes: resC || [],
+                prestamos: resP || [],
+                pagos: resG || []
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `CredityX_Backup_${prestamistaSesion}_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        async function restaurarBackupJSON() {
+            const fileInput = document.getElementById('input-archivo-backup');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                mostrarToast("Por favor selecciona un archivo JSON de respaldo.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                try {
+                    const contenido = JSON.parse(e.target.result);
+                    if (!contenido.clientes || !contenido.prestamos) {
+                        mostrarToast("El archivo de respaldo no tiene un formato válido.");
+                        return;
+                    }
+
+                    if (confirm("⚠️ ¿Estás seguro de restaurar este respaldo? Se agregarán los clientes y préstamos contenidos en el archivo a tu cuenta actual.")) {
+                        for (let c of contenido.clientes) {
+                            delete c.id; 
+                            c.usuario = prestamistaSesion;
+                            await supabaseClient.from('clientes').insert([c]);
+                        }
+
+                        mostrarToast("✅ Copia de seguridad restaurada con éxito.");
+                        cerrarModalBackup();
+                        await cargarDatosUsuario();
+                        refrescarInterfazActual();
+                    }
+                } catch (err) {
+                    mostrarToast("Error al leer el archivo JSON: " + err.message);
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        function seleccionarPestanaConfig(tipo) {
+            const btnPassword = document.getElementById('btn-pestana-password');
+            const btnPregunta = document.getElementById('btn-pestana-pregunta');
+            const formPassword = document.getElementById('formCambiarPassword');
+            const formPregunta = document.getElementById('formCambiarPregunta');
+
+            if (tipo === 'password') {
+                btnPassword.className = "py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 bg-white text-indigo-600 shadow-xs";
+                btnPregunta.className = "py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900";
+                formPassword.classList.remove('hidden');
+                formPregunta.classList.add('hidden');
+            } else {
+                btnPregunta.className = "py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 bg-white text-indigo-600 shadow-xs";
+                btnPassword.className = "py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900";
+                formPregunta.classList.remove('hidden');
+                formPassword.classList.add('hidden');
+            }
+        }
+
+        async function guardarNuevaPassword(e) {
+            e.preventDefault();
+            const passActual = document.getElementById('pass-actual').value.trim();
+            const passNueva = document.getElementById('pass-nueva').value.trim();
+
+            if (!passActual || !passNueva) {
+                mostrarToast("Completa ambos campos de contraseña.");
+                return;
+            }
+
+            const { data } = await supabaseClient
+                .from('perfiles')
+                .select('password')
+                .eq('usuario', prestamistaSesion)
+                .limit(1);
+
+            if (!data || data.length === 0 || data[0].password !== passActual) {
+                mostrarToast("❌ La contraseña actual es incorrecta.");
+                return;
+            }
+
+            const { error } = await supabaseClient
+                .from('perfiles')
+                .update({ password: passNueva })
+                .eq('usuario', prestamistaSesion);
+
+            if (error) {
+                mostrarToast("Error al actualizar contraseña: " + error.message);
+                return;
+            }
+
+            mostrarToast("✅ Contraseña actualizada con éxito.");
+            document.getElementById('pass-actual').value = '';
+            document.getElementById('pass-nueva').value = '';
+        }
+
+        async function guardarNuevaPreguntaSeguridad(e) {
+            e.preventDefault();
+            const nuevaPregunta = document.getElementById('cuenta-pregunta-input').value.trim();
+            const nuevaRespuesta = document.getElementById('cuenta-respuesta-input').value.trim().toLowerCase();
+
+            if (!nuevaPregunta || !nuevaRespuesta) {
+                mostrarToast("Completa todos los campos de seguridad.");
+                return;
+            }
+
+            const { error } = await supabaseClient
+                .from('perfiles')
+                .update({ pregunta: nuevaPregunta, respuesta: nuevaRespuesta })
+                .eq('usuario', prestamistaSesion);
+
+            if (error) {
+                mostrarToast("Error al actualizar pregunta: " + error.message);
+                return;
+            }
+
+            mostrarToast("✅ Pregunta y respuesta de seguridad actualizadas con éxito.");
+        }
+
+        function abrirModalRecuperar() {
+            document.getElementById('rec-usuario-input').value = '';
+            document.getElementById('rec-respuesta-input').value = '';
+            document.getElementById('rec-nueva-pass').value = '';
+            document.getElementById('recuperar-paso-1').classList.remove('hidden');
+            document.getElementById('recuperar-paso-2').classList.add('hidden');
+            document.getElementById('modal-recuperar').classList.remove('hidden');
+        }
+
+        function cerrarModalRecuperar() {
+            document.getElementById('modal-recuperar').classList.add('hidden');
+        }
+
+        async function buscarPreguntaRecuperacion() {
+            const user = document.getElementById('rec-usuario-input').value.trim().toLowerCase();
+            const { data } = await supabaseClient
+                .from('perfiles')
+                .select('*')
+                .eq('usuario', user)
+                .limit(1);
+
+            const encontrada = data ? data[0] : null;
+
+            if (!encontrada) {
+                mostrarToast("❌ El usuario ingresado no existe.");
+                return;
+            }
+
+            usuarioTempRecuperacion = user;
+            document.getElementById('rec-pregunta-label').textContent = encontrada.pregunta || "¿Cuál es el nombre de tu primera mascota?";
+            document.getElementById('recuperar-paso-1').classList.add('hidden');
+            document.getElementById('recuperar-paso-2').classList.remove('hidden');
+        }
+
+        async function cambiarPasswordConPregunta() {
+            const respuestaIngresada = document.getElementById('rec-respuesta-input').value.trim().toLowerCase();
+            const nuevaPass = document.getElementById('rec-nueva-pass').value.trim();
+
+            if (!respuestaIngresada || !nuevaPass) {
+                mostrarToast("Por favor completa todos los campos.");
+                return;
+            }
+
+            const { data } = await supabaseClient
+                .from('perfiles')
+                .select('*')
+                .eq('usuario', usuarioTempRecuperacion)
+                .limit(1);
+
+            const encontrada = data ? data[0] : null;
+
+            if (encontrada) {
+                if (encontrada.respuesta === respuestaIngresada) {
+                    await supabaseClient
+                        .from('perfiles')
+                        .update({ password: nuevaPass })
+                        .eq('usuario', usuarioTempRecuperacion);
+
+                    mostrarToast("¡Contraseña actualizada con éxito en Supabase! Ya puedes iniciar sesión.");
+                    cerrarModalRecuperar();
+                } else {
+                    mostrarToast("❌ La respuesta secreta es incorrecta.");
+                }
+            }
+        }
+
+        async function cargarDatosUsuario() {
+            const resC = await supabaseClient.from('clientes').select('*').eq('usuario', prestamistaSesion);
+            clientes = resC.data || [];
+
+            const resP = await supabaseClient.from('prestamos').select('*').eq('usuario', prestamistaSesion);
+            prestamos = (resP.data || []).map(p => ({
+                id: p.id,
+                clienteId: p.cliente_id,
+                capitalInicial: Number(p.capital_inicial),
+                capitalActual: Number(p.capital_actual),
+                fechaInicio: p.fecha_inicio,
+                tasaInteres: Number(p.tasa_interes),
+                frecuencia: p.frecuencia,
+                saldoPendienteInteres: Number(p.saldo_pendiente_interes || 0),
+                interesesCongelados: p.intereses_congelados,
+                estado: p.estado
+            }));
+
+            const resG = await supabaseClient.from('pagos').select('*').eq('usuario', prestamistaSesion);
+            pagos = (resG.data || []).map(pg => ({
+                id: pg.id,
+                prestamoId: pg.prestamo_id,
+                monto: Number(pg.monto),
+                tipo: pg.tipo,
+                fecha: pg.fecha
+            }));
+        }
+
+        async function cambiarPanel(panelNombre) {
+            if (panelNombre === 'admin-maestro') {
+                const { data } = await supabaseClient
+                    .from('perfiles')
+                    .select('*')
+                    .eq('usuario', prestamistaSesion)
+                    .limit(1);
+
+                const cuentaActual = data ? data[0] : null;
+
+                if (!cuentaActual || !cuentaActual.es_super_admin) {
+                    mostrarToast("⛔ ACCESO DENEGADO: No tienes permisos de Administrador Maestro.");
+                    cambiarPanel('dashboard');
+                    return;
+                }
+            }
+
+            if (panelNombre === 'clientes') {
+                clienteSeleccionadoId = null;
+                const vistaExp = document.getElementById('vista-expediente-cliente');
+                const vistaList = document.getElementById('vista-lista-clientes');
+                if (vistaExp) vistaExp.classList.add('hidden');
+                if (vistaList) vistaList.classList.remove('hidden');
+            }
+
+            document.querySelectorAll('.panel-section').forEach(el => el.classList.add('hidden'));
+            
+            // Limpiar botones de escritorio
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+                btn.classList.add('hover:bg-slate-800', 'text-indigo-200');
+            });
+
+            // Limpiar botones móviles
+            document.querySelectorAll('.nav-btn-movil').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+                btn.classList.add('hover:bg-slate-800', 'text-indigo-200');
+            });
+
+            const panel = document.getElementById(`panel-${panelNombre}`);
+            const btnNav = document.getElementById(`nav-${panelNombre}`);
+            const btnNavMovil = document.getElementById(`nav-movil-${panelNombre}`);
+            
+            if (panel) panel.classList.remove('hidden');
+            if (btnNav) {
+                btnNav.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+                btnNav.classList.remove('hover:bg-slate-800', 'text-indigo-200');
+            }
+            if (btnNavMovil) {
+                btnNavMovil.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+                btnNavMovil.classList.remove('hover:bg-slate-800', 'text-indigo-200');
+            }
+
+            refrescarInterfazActual();
+            lucide.createIcons();
+        }
+
+        function calcularVistaPreviaPrestamo() {
+            const monto = parseFloat(document.getElementById('p-monto').value) || 0;
+            const tasa = parseFloat(document.getElementById('p-tasa').value) || 0;
+            const interes = monto * (tasa / 100);
+            const totalCuota = monto + interes;
+
+            document.getElementById('preview-interes').textContent = `$${interes.toFixed(2)}`;
+            document.getElementById('preview-total').textContent = `$${totalCuota.toFixed(2)}`;
+        }
+
+        function refrescarInterfazActual() {
+            const panelDashboard = document.getElementById('panel-dashboard');
+            const panelClientes = document.getElementById('panel-clientes');
+            const panelCobros = document.getElementById('panel-cobros');
+            const panelAdmin = document.getElementById('panel-admin-maestro');
+
+            if (!panelDashboard.classList.contains('hidden')) {
+                actualizarDashboard();
+                renderizarGraficoIngresos();
+            }
+            if (!panelClientes.classList.contains('hidden')) {
+                if (clienteSeleccionadoId !== null) verExpedienteCliente(clienteSeleccionadoId);
+                else renderizarClientes();
+            }
+            if (!panelCobros.classList.contains('hidden')) renderizarCobranzas();
+            if (!panelAdmin.classList.contains('hidden')) renderizarPanelAdminMaestro();
+            actualizarSelectClientes();
+        }
+
+        function renderizarGraficoIngresos() {
+            const ctx = document.getElementById('graficoIngresos');
+            if (!ctx) return;
+
+            const mesesMap = {};
+            pagos.forEach(pg => {
+                if (!pg.fecha) return;
+                const mesKey = pg.fecha.substring(0, 7);
+                mesesMap[mesKey] = (mesesMap[mesKey] || 0) + pg.monto;
+            });
+
+            const mesesOrdenados = Object.keys(mesesMap).sort();
+            const labels = mesesOrdenados.map(m => {
+                const [anio, mes] = m.split('-');
+                const fechaObj = new Date(anio, mes - 1, 1);
+                return fechaObj.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+            });
+            const dataValores = mesesOrdenados.map(m => mesesMap[m]);
+
+            if (graficoIngresosInstance) {
+                graficoIngresosInstance.destroy();
+            }
+
+            graficoIngresosInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ['Sin datos'],
+                    datasets: [{
+                        label: 'Ingresos Mensuales ($)',
+                        data: dataValores.length > 0 ? dataValores : [0],
+                        backgroundColor: '#4f46e5',
+                        borderRadius: 12,
+                        barThickness: 'flex',
+                        maxBarThickness: 45
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+async function renderizarPanelAdminMaestro() {
+            const { data: cuentas } = await supabaseClient.from('perfiles').select('*');
+            const tbody = document.getElementById('tabla-prestamistas-admin');
+            tbody.innerHTML = '';
+
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+
+            const prestamistasLista = (cuentas || []).filter(c => !c.es_super_admin);
+            document.getElementById('admin-total-cuentas').textContent = prestamistasLista.length;
+
+            if (prestamistasLista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">No hay prestamistas registrados en la plataforma.</td></tr>`;
+                return;
+            }
+
+            prestamistasLista.forEach(c => {
+                const fechaVen = c.vencimiento_suscripcion ? parsearFechaLocal(c.vencimiento_suscripcion) : hoy;
+                const estaVencidaFecha = hoy > fechaVen;
+                const estaRealmenteActiva = c.suscripcion_activa && !estaVencidaFecha;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100 text-xs sm:text-sm";
+                tr.innerHTML = `
+                    <td class="p-3.5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-indigo-50 text-indigo-700 font-bold rounded-xl flex items-center justify-center text-xs border border-indigo-100 shrink-0">
+                                ${c.usuario.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <span class="font-bold text-slate-900 text-sm block">${c.usuario}</span>
+                                <span class="text-[10px] text-slate-400 font-medium">ID de cuenta corporativa</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-3.5">
+                        <div class="space-y-1">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold ${estaRealmenteActiva ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
+                                <i data-lucide="${estaRealmenteActiva ? 'check-circle-2' : 'alert-circle'}" class="w-3.5 h-3.5"></i>
+                                ${estaRealmenteActiva ? 'Suscripción Activa' : 'Suscripción Vencida'}
+                            </span>
+                            <p class="text-[11px] ${estaVencidaFecha ? 'text-red-600 font-bold' : 'text-slate-500'}">Vence: ${c.vencimiento_suscripcion || 'N/A'}</p>
+                        </div>
+                    </td>
+                    <td class="p-3.5">
+                        <span class="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                            <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-500"></i>
+                            ${c.ultima_conexion ? new Date(c.ultima_conexion).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin registros'}
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-center">
+                        <button onclick="renovarSuscripcionPrompt('${c.usuario}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 border border-indigo-200/80 shadow-xs">
+                            <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i> Renovar
+                        </button>
+                    </td>
+                    <td class="p-3.5 text-center">
+                        <button onclick="toggleSuscripcion('${c.usuario}', ${estaRealmenteActiva})" class="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition inline-flex items-center gap-1.5 shadow-xs ${estaRealmenteActiva ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'}">
+                            <i data-lucide="${estaRealmenteActiva ? 'lock' : 'unlock'}" class="w-3.5 h-3.5"></i>
+                            ${estaRealmenteActiva ? 'Bloquear' : 'Activar'}
+                        </button>
+                    </td>
+                    <td class="p-3.5 text-center">
+                        <button onclick="eliminarPrestamistaMaestro('${c.usuario}')" title="Eliminar cuenta" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/80 p-2 rounded-xl text-xs transition inline-flex items-center justify-center mx-auto shadow-xs">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        async function renovarSuscripcionPrompt(usuario) {
+            let nuevaFecha = prompt(`Ingresa la nueva fecha de vencimiento para ${usuario}\nFormato (AAAA-MM-DD):`, new Date().toISOString().split('T')[0]);
+            if (!nuevaFecha) return;
+
+            const { error } = await supabaseClient
+                .from('perfiles')
+                .update({ vencimiento_suscripcion: nuevaFecha.trim(), suscripcion_activa: true })
+                .eq('usuario', usuario);
+
+            if (error) {
+                mostrarToast("Error al renovar suscripción: " + error.message);
+                return;
+            }
+            await renderizarPanelAdminMaestro();
+        }
+
+        async function toggleSuscripcion(usuario, estadoActual) {
+            let nuevaFecha = new Date();
+            nuevaFecha.setDate(nuevaFecha.getDate() + 30);
+            const fechaStr = nuevaFecha.toISOString().split('T')[0];
+
+            const nuevoEstado = !estadoActual;
+            let payload = { suscripcion_activa: nuevoEstado };
+            if (nuevoEstado) payload.vencimiento_suscripcion = fechaStr;
+
+            const { error } = await supabaseClient
+                .from('perfiles')
+                .update(payload)
+                .eq('usuario', usuario);
+
+            if (error) {
+                mostrarToast("Error al actualizar acceso: " + error.message);
+                return;
+            }
+            await renderizarPanelAdminMaestro();
+        }
+
+        async function eliminarPrestamistaMaestro(usuario) {
+            if (confirm(`⚠️ ¿Estás seguro de eliminar al usuario "${usuario}" y TODOS sus datos de Supabase?`)) {
+                const { error } = await supabaseClient.from('perfiles').delete().eq('usuario', usuario);
+                if (error) {
+                    mostrarToast("Error al eliminar cuenta: " + error.message);
+                    return;
+                }
+                await renderizarPanelAdminMaestro();
+            }
+        }
+
+        function obtenerFechaUltimoPagoOInicio(p) {
+            const pagosPrestamo = pagos.filter(pg => pg.prestamoId === p.id);
+            if (pagosPrestamo.length > 0) {
+                // Ordenamos para obtener la fecha del último pago para los cálculos de intereses
+                const pagosOrdenados = [...pagosPrestamo].sort((a,b) => parsearFechaLocal(b.fecha) - parsearFechaLocal(a.fecha));
+                const fechaRef = parsearFechaLocal(pagosOrdenados[0].fecha);
+                fechaRef.setHours(0,0,0,0);
+                return fechaRef;
+            }
+            // Si no hay pagos, devuelve la fecha de inicio del préstamo
+            const fechaRef = parsearFechaLocal(p.fechaInicio);
+            fechaRef.setHours(0,0,0,0);
+            return fechaRef;
+        }
+
+        function esCobroHoy(p) {
+            if (p.estado !== 'activo' || p.interesesCongelados) return false;
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+            
+            const ultimaFechaRef = obtenerFechaUltimoPagoOInicio(p);
+
+            let diasPorPeriodo = 7;
+            if (p.frecuencia === 'diario') diasPorPeriodo = 1;
+            if (p.frecuencia === 'catorcenal') diasPorPeriodo = 14;
+            if (p.frecuencia === 'quincenal') diasPorPeriodo = 15;
+            if (p.frecuencia === 'mensual') diasPorPeriodo = 30;
+
+            const diffTime = hoy.getTime() - ultimaFechaRef.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
+            return diffDays >= 0 && (diffDays % diasPorPeriodo === 0 || calcularInteresesPendientesNetos(p) > 0);
+        }
+
+        function calcularInteresesPendientesNetos(p) {
+            if (p.estado !== 'activo') return 0;
+            if (p.interesesCongelados) return p.saldoPendienteInteres || 0;
+
+            const interesPorPeriodo = p.capitalActual * (p.tasaInteres / 100);
+            
+            // Consultamos las cuotas pendientes calculadas desde la fecha de entrega inicial
+            const infoCuotas = calcularEstadoCuotasYCapitalizacion(p);
+            
+            // Multiplicamos las cuotas sin pagar por el monto de interés de cada periodo
+            const interesesGenerados = (infoCuotas.cuotasSinPagar * interesPorPeriodo) + (p.saldoPendienteInteres || 0);
+
+            return Math.max(0, interesesGenerados);
+        }
+
+        function calcularEstadoCuotasYCapitalizacion(p) {
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+            
+            // Usamos la fecha de inicio ORIGINAL del préstamo como punto de referencia fijo
+            const fechaInicioOriginal = parsearFechaLocal(p.fechaInicio);
+            fechaInicioOriginal.setHours(0,0,0,0);
+
+            let diasPorPeriodo = 7;
+            if (p.frecuencia === 'diario') diasPorPeriodo = 1;
+            if (p.frecuencia === 'catorcenal') diasPorPeriodo = 14;
+            if (p.frecuencia === 'quincenal') diasPorPeriodo = 15;
+            if (p.frecuencia === 'mensual') diasPorPeriodo = 30;
+
+            // Días totales transcurridos desde que se entregó el préstamo el 12 de octubre
+            const diffTime = hoy.getTime() - fechaInicioOriginal.getTime();
+            const diasAtraso = Math.max(0, Math.floor(diffTime / (1000 * 3600 * 24)));
+            
+            // Cuotas totales correspondientes al tiempo transcurrido
+            const cuotasTotales = Math.floor(diasAtraso / diasPorPeriodo);
+            
+            // Contamos cuántas cuotas/pagos ha realizado el cliente en total
+            const pagosPrestamo = pagos.filter(pg => pg.prestamoId === p.id && (pg.tipo === 'solo_intereses' || pg.tipo === 'cuota_completa'));
+            const cuotasPagadas = pagosPrestamo.length;
+
+            // Cuotas realmente pendientes
+            const cuotasSinPagar = Math.max(0, cuotasTotales - cuotasPagadas);
+            let sugerirCapitalizacion = cuotasSinPagar >= 3;
+
+            return { diasAtraso, cuotasSinPagar, sugerirCapitalizacion };
+        }
+
+        // FUNCIÓN SEGURA PARA CONGELAR/DESCONGELAR INTERESES SIN DAÑAR LAS CUENTAS
+        async function toggleCongelarIntereses(prestamoId) {
+            const p = prestamos.find(item => item.id === prestamoId);
+            if (!p) return;
+
+            let nuevoEstado = !p.interesesCongelados;
+            let nuevoSaldo = p.saldoPendienteInteres;
+
+            if (nuevoEstado) {
+                nuevoSaldo = calcularInteresesPendientesNetos(p);
+            } else {
+                nuevoSaldo = 0;
+            }
+
+            const { error } = await supabaseClient.from('prestamos').update({
+                intereses_congelados: nuevoEstado,
+                saldo_pendiente_interes: nuevoSaldo
+            }).eq('id', prestamoId);
+
+            if (error) {
+                mostrarToast("Error al actualizar intereses: " + error.message);
+                return;
+            }
+            await cargarDatosUsuario();
+            refrescarInterfazActual();
+        }
+
+        function abrirModalCapitalizar(prestamoId) {
+            const p = prestamos.find(item => item.id === prestamoId);
+            if (!p) return;
+
+            const intNeto = calcularInteresesPendientesNetos(p);
+            if (intNeto <= 0) {
+                mostrarToast("No hay intereses pendientes para capitalizar.");
+                return;
+            }
+
+            document.getElementById('cap-prestamo-id').value = p.id;
+            document.getElementById('cap-modal-maximo').textContent = intNeto.toFixed(2);
+            document.getElementById('cap-modo').value = 'maximo';
+            document.getElementById('contenedor-cap-monto').classList.add('hidden');
+            document.getElementById('cap-monto-input').value = '';
+
+            document.getElementById('modal-capitalizar').classList.remove('hidden');
+        }
+
+        function cerrarModalCapitalizar() {
+            document.getElementById('modal-capitalizar').classList.add('hidden');
+        }
+
+        function cambiarModoCapitalizacion() {
+            const modo = document.getElementById('cap-modo').value;
+            const contenedorMonto = document.getElementById('contenedor-cap-monto');
+            if (modo === 'personalizado') {
+                contenedorMonto.classList.remove('hidden');
+                document.getElementById('cap-monto-input').required = true;
+            } else {
+                contenedorMonto.classList.add('hidden');
+                document.getElementById('cap-monto-input').required = false;
+            }
+        }
+
+        async function ejecutarCapitalizacion(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('cap-prestamo-id').value);
+            const p = prestamos.find(item => item.id === id);
+            if (!p) return;
+
+            const intNetoMax = calcularInteresesPendientesNetos(p);
+            const modo = document.getElementById('cap-modo').value;
+            let montoACapitalizar = intNetoMax;
+
+            if (modo === 'personalizado') {
+                montoACapitalizar = parseFloat(document.getElementById('cap-monto-input').value);
+                if (isNaN(montoACapitalizar) || montoACapitalizar <= 0) {
+                    mostrarToast("Ingresa un monto válido.");
+                    return;
+                }
+                if (montoACapitalizar > intNetoMax) {
+                    mostrarToast(`El monto no puede ser mayor al interés pendiente máximo ($${intNetoMax.toFixed(2)}).`);
+                    return;
+                }
+            }
+
+            const nuevoCapital = p.capitalActual + montoACapitalizar;
+            const nuevoSaldoInteres = (modo === 'maximo') ? 0 : Math.max(0, intNetoMax - montoACapitalizar);
+            const nuevaFecha = new Date().toISOString().split('T')[0];
+
+            const { error } = await supabaseClient.from('prestamos').update({
+                capital_actual: nuevoCapital,
+                saldo_pendiente_interes: nuevoSaldoInteres,
+                fecha_inicio: nuevaFecha
+            }).eq('id', id);
+
+            if (error) {
+                mostrarToast("Error al capitalizar: " + error.message);
+                return;
+            }
+
+            cerrarModalCapitalizar();
+            await cargarDatosUsuario();
+            refrescarInterfazActual();
+        }
+
+function calcularFlujoDeCaja() {
+            let total7 = 0;
+            let total15 = 0;
+            let total30 = 0;
+
+            const prestamosActivos = prestamos.filter(p => p.estado === 'activo');
+
+            prestamosActivos.forEach(p => {
+                const interesPeriodo = p.capitalActual * (p.tasaInteres / 100);
+                const cuotaEstimada = (p.capitalActual / 4) + interesPeriodo;
+                
+                const freq = (p.frecuencia || '').toLowerCase();
+
+                if (freq.includes('diario')) {
+                    // En 7 días cobras 7 cuotas, en 15 cobras 15, en 30 cobras 30
+                    total7 += cuotaEstimada * 7;
+                    total15 += cuotaEstimada * 15;
+                    total30 += cuotaEstimada * 30;
+                } else if (freq.includes('semanal')) {
+                    // En 7 días cobras 1 cuota, en 15 cobras 2, en 30 cobras 4
+                    total7 += cuotaEstimada * 1;
+                    total15 += cuotaEstimada * 2;
+                    total30 += cuotaEstimada * 4;
+                } else if (freq.includes('catorcenal') || freq.includes('quincenal')) {
+                    // En 7 días 0 o 1 cuota, en 15 cobras 1, en 30 cobras 2
+                    total7 += cuotaEstimada * 0.5;
+                    total15 += cuotaEstimada * 1;
+                    total30 += cuotaEstimada * 2;
+                } else if (freq.includes('mensual')) {
+                    // En 7 y 15 días aún no vence la cuota completa, en 30 cobras 1
+                    total7 += cuotaEstimada * 0.25;
+                    total15 += cuotaEstimada * 0.50;
+                    total30 += cuotaEstimada * 1;
+                } else {
+                    // Frecuencia por defecto (Semanal)
+                    total7 += cuotaEstimada * 1;
+                    total15 += cuotaEstimada * 2;
+                    total30 += cuotaEstimada * 4;
+                }
+            });
+
+            const el7 = document.getElementById('cashflow-7d');
+            const el15 = document.getElementById('cashflow-15d');
+            const el30 = document.getElementById('cashflow-30d');
+
+            if (el7) el7.textContent = `$${total7.toFixed(2)}`;
+            if (el15) el15.textContent = `$${total15.toFixed(2)}`;
+            if (el30) el30.textContent = `$${total30.toFixed(2)}`;
+        }
+
+
+        function calcularFlujoDeCaja() {
+            let total7 = 0;
+            let total15 = 0;
+            let total30 = 0;
+
+            const prestamosActivos = prestamos.filter(p => p.estado === 'activo' && !p.interesesCongelados);
+
+            prestamosActivos.forEach(p => {
+                const interesPeriodo = p.capitalActual * (p.tasaInteres / 100);
+                const freq = (p.frecuencia || '').toLowerCase();
+
+                if (freq.includes('diario')) {
+                    total7 += interesPeriodo * 7;
+                    total15 += interesPeriodo * 15;
+                    total30 += interesPeriodo * 30;
+                } else if (freq.includes('semanal')) {
+                    total7 += interesPeriodo * 1;
+                    total15 += interesPeriodo * 2;
+                    total30 += interesPeriodo * 4;
+                } else if (freq.includes('catorcenal') || freq.includes('quincenal')) {
+                    total7 += interesPeriodo * 0.5;
+                    total15 += interesPeriodo * 1;
+                    total30 += interesPeriodo * 2;
+                } else if (freq.includes('mensual')) {
+                    total7 += interesPeriodo * 0.25;
+                    total15 += interesPeriodo * 0.50;
+                    total30 += interesPeriodo * 1;
+                } else {
+                    total7 += interesPeriodo * 1;
+                    total15 += interesPeriodo * 2;
+                    total30 += interesPeriodo * 4;
+                }
+            });
+
+            const el7 = document.getElementById('cashflow-7d');
+            const el15 = document.getElementById('cashflow-15d');
+            const el30 = document.getElementById('cashflow-30d');
+
+            if (el7) el7.textContent = `$${total7.toFixed(2)}`;
+            if (el15) el15.textContent = `$${total15.toFixed(2)}`;
+            if (el30) el30.textContent = `$${total30.toFixed(2)}`;
+        }
+
+
+        function actualizarDashboard() {
+            let capitalTotal = 0;
+            let interesesPendientesNetos = 0;
+            let activosCount = 0;
+            let prestamosHoy = [];
+
+            const fechaObjHoy = new Date();
+            const hoyStr = fechaObjHoy.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('dash-hoy-fecha').textContent = hoyStr;
+            document.getElementById('dash-fecha-texto').textContent = fechaObjHoy.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+
+            prestamos.forEach(p => {
+                if (p.estado === 'activo') {
+                    capitalTotal += p.capitalActual;
+                    interesesPendientesNetos += calcularInteresesPendientesNetos(p);
+                    activosCount++;
+                    if (esCobroHoy(p)) prestamosHoy.push(p);
+                }
+            });
+
+            let totalCobrado = pagos.reduce((acc, pago) => acc + pago.monto, 0);
+
+            document.getElementById('dash-capital').textContent = `$${capitalTotal.toFixed(2)}`;
+            document.getElementById('dash-intereses').textContent = `$${interesesPendientesNetos.toFixed(2)}`;
+            document.getElementById('dash-cobrado').textContent = `$${totalCobrado.toFixed(2)}`;
+            document.getElementById('dash-activos').textContent = activosCount;
+            document.getElementById('dash-badge-hoy').textContent = prestamosHoy.length;
+
+            const contenedorHoy = document.getElementById('dash-lista-hoy');
+            if (prestamosHoy.length === 0) {
+                contenedorHoy.innerHTML = `
+                    <div class="col-span-full py-10 text-center bg-slate-900/60 rounded-2xl border border-slate-800">
+                        <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2 border border-emerald-500/20">
+                            <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        </div>
+                        <p class="text-xs text-slate-300 font-bold">¡Excelente! No hay cobros programados para el día de hoy.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Todas las cuotas al corriente.</p>
+                    </div>
+                `;
+            } else {
+                contenedorHoy.innerHTML = '';
+                prestamosHoy.forEach(p => {
+                    const cliente = clientes.find(c => c.id === p.clienteId);
+                    const intNeto = calcularInteresesPendientesNetos(p);
+                    const nombreCliente = cliente ? cliente.nombre : 'Cliente Desconocido';
+                    const telefonoCliente = cliente ? cliente.telefono : '';
+                    const iniciales = nombreCliente.substring(0, 2).toUpperCase();
+
+                    const card = document.createElement('div');
+                    card.className = "bg-slate-900/90 hover:bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl flex flex-col justify-between gap-4 transition shadow-lg relative overflow-hidden group";
+                    card.innerHTML = `
+                        <div class="absolute -right-8 -top-8 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none"></div>
+                        
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 bg-indigo-600/20 text-indigo-300 font-black rounded-2xl flex items-center justify-center text-xs border border-indigo-500/30 shrink-0 shadow-inner">
+                                    ${iniciales}
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-white text-sm flex items-center gap-1.5">
+                                        ${nombreCliente}
+                                    </h3>
+                                    <p class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                        <i data-lucide="phone" class="w-3 h-3 text-slate-500"></i> ${telefonoCliente || 'Sin teléfono'}
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0">
+                                ${p.frecuencia}
+                            </span>
+                        </div>
+
+                        <!-- DISEÑO RESPONSIVO: LADO A LADO EN COMPUTADORA, ARRIBA Y ABAJO EN MÓVIL -->
+                        <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/80">
+                            <!-- Bloque de Montos -->
+                            <div class="grid grid-cols-2 gap-2.5 flex-1 border-b lg:border-b-0 lg:border-r border-slate-800 pb-3 lg:pb-0 lg:pr-3">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider mb-0.5">Capital Actual</span>
+                                    <strong class="text-slate-200 text-sm sm:text-base">$${p.capitalActual.toFixed(2)}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-emerald-400 font-extrabold block uppercase tracking-wider mb-0.5">Interés de Hoy</span>
+                                    <strong class="text-emerald-400 text-sm sm:text-base font-black">$${intNeto.toFixed(2)}</strong>
+                                </div>
+                            </div>
+
+                            <!-- Bloque de Botones Acciones -->
+                            <div class="flex items-center gap-2 lg:w-auto w-full">
+                                <button onclick="enviarWhatsAppCobro(${p.id})" title="Enviar WhatsApp" class="flex-1 lg:flex-none bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+                                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Recordar
+                                </button>
+                                <button onclick="abrirModalPago(${p.id})" class="flex-1 lg:flex-none bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white py-2.5 px-3.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 whitespace-nowrap">
+                                    <i data-lucide="badge-dollar-sign" class="w-3.5 h-3.5"></i> Cobrar Ahora
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    contenedorHoy.appendChild(card);
+                });
+            }
+
+            const contenedor = document.getElementById('dash-lista-prestamos');
+            const prestamosActivosLista = prestamos.filter(p => p.estado === 'activo');
+            
+            // Calculamos y proyectamos el flujo de caja aquí mismo cada vez que se actualiza el dashboard
+            calcularFlujoDeCaja();
+
+            if (prestamosActivosLista.length === 0) {
+                contenedor.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No hay préstamos activos registrados.</p>`;
+                return;
+            }
+            contenedor.innerHTML = '';
+            prestamosActivosLista.forEach(p => {
+                const cliente = clientes.find(c => c.id === p.clienteId);
+                const intNeto = calcularInteresesPendientesNetos(p);
+                const infoCuotas = calcularEstadoCuotasYCapitalizacion(p);
+
+                const card = document.createElement('div');
+                card.className = "flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-50/80 p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 text-xs sm:text-sm gap-2.5";
+                card.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p class="font-bold text-slate-800 text-xs sm:text-base">${cliente ? cliente.nombre : 'Cliente'}</p>
+                            ${p.interesesCongelados ? '<span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1"><i data-lucide="snowflake" class="w-3 h-3"></i> Congelado</span>' : ''}
+                        </div>
+                        <p class="text-[11px] sm:text-xs text-slate-500">Cap: <strong class="text-slate-700">$${p.capitalActual.toFixed(2)}</strong> | ${p.tasaInteres}% ${p.frecuencia} | Inicio: ${p.fechaInicio}</p>
+                        <p class="text-[10px] sm:text-[11px] font-medium text-slate-600">
+                            ⏳ Sin pagar: <strong class="text-amber-600">${infoCuotas.cuotasSinPagar} cuota(s)</strong> (${infoCuotas.diasAtraso} días)
+                            ${infoCuotas.sugerirCapitalizacion ? '<span class="ml-1 bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">💡 Capitalizar</span>' : ''}
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-between md:justify-end pt-2 md:pt-0 border-t md:border-0 border-slate-200">
+                        <span class="text-xs font-bold ${intNeto > 0 ? 'text-amber-600' : 'text-emerald-600'}">Pend: $${intNeto.toFixed(2)}</span>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <button onclick="enviarWhatsAppCobro(${p.id})" title="WhatsApp" class="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-xl transition"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
+                            <button onclick="toggleCongelarIntereses(${p.id})" class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1 ${p.interesesCongelados ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200/80 text-slate-700 hover:bg-slate-300'}">
+                                <i data-lucide="snowflake" class="w-3.5 h-3.5"></i> ${p.interesesCongelados ? 'Descongelar' : 'Congelar'}
+                            </button>
+                            <button onclick="abrirModalCapitalizar(${p.id})" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 px-2.5 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1">
+                                <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Capitalizar
+                            </button>
+                            <button onclick="confirmarEliminarPrestamo(${p.id})" title="Eliminar" class="text-red-500 hover:text-red-700 p-1.5 rounded-xl transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                `;
+                contenedor.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function actualizarSelectClientes() {
+            const select = document.getElementById('p-cliente-select');
+            if (!select) return;
+            select.innerHTML = '';
+            if (clientes.length === 0) {
+                select.innerHTML = `<option value="">No hay clientes registrados</option>`;
+                return;
+            }
+            clientes.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.id;
+                option.textContent = `${c.nombre} (${c.cedula || 'Sin CI'})`;
+                select.appendChild(option);
+            });
+        }
+
+        function renderizarClientes() {
+            const grid = document.getElementById('grid-clientes');
+            if (!grid) return;
+            const query = (document.getElementById('input-buscar-cliente')?.value || '').toLowerCase();
+            grid.innerHTML = '';
+
+            const clientesFiltrados = clientes.filter(c => 
+                c.nombre.toLowerCase().includes(query) || (c.cedula && c.cedula.toLowerCase().includes(query))
+            );
+
+            if (clientesFiltrados.length === 0) {
+                grid.innerHTML = `<p class="text-slate-400 text-xs sm:text-sm text-center col-span-full py-8">No se encontraron clientes.</p>`;
+                return;
+            }
+
+            clientesFiltrados.forEach(c => {
+                const prestamosCliente = prestamos.filter(p => p.clienteId === Number(c.id) && p.estado === 'activo');
+                const deudaTotal = prestamosCliente.reduce((sum, p) => sum + p.capitalActual, 0);
+                const riesgo = calcularRiesgoCliente(c.id);
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200/80 hover:border-indigo-300 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 flex flex-col justify-between animate-scale-in";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-10 h-10 bg-indigo-50 text-indigo-600 font-black rounded-2xl flex items-center justify-center shrink-0 text-xs sm:text-sm border border-indigo-100">${c.nombre.substring(0, 2).toUpperCase()}</div>
+                                <div class="overflow-hidden">
+                                    <h3 class="font-bold text-slate-800 text-xs sm:text-base truncate">${c.nombre}</h3>
+                                    <p class="text-[11px] sm:text-xs text-slate-500 truncate">${c.telefono || 'Sin teléfono'}</p>
+                                </div>
+                            </div>
+                            <button onclick="abrirModalEditarCliente(${c.id})" class="text-slate-400 hover:text-indigo-600 p-1.5 rounded-xl transition" title="Editar">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="bg-slate-50/80 p-3 rounded-2xl mb-4 text-xs space-y-2 border border-slate-100">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Nivel de Riesgo:</span> 
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${riesgo.clase}">${riesgo.texto}</span>
+                            </div>
+                            <div class="flex justify-between text-slate-600"><span>Préstamos activos:</span> <strong class="text-slate-800">${prestamosCliente.length}</strong></div>
+                            <div class="flex justify-between text-slate-600"><span>Deuda activa:</span> <strong class="text-indigo-600 font-bold">$${deudaTotal.toFixed(2)}</strong></div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="verExpedienteCliente(${c.id})" class="w-full bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-1.5">
+                            <i data-lucide="eye" class="w-4 h-4"></i> Expediente
+                        </button>
+                        <button onclick="confirmarEliminarClienteDirecto(${c.id})" title="Eliminar" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/80 px-3 py-2 rounded-xl text-xs transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+        function calcularRiesgoCliente(clienteId) {
+            const prestamosActivos = prestamos.filter(p => p.clienteId === Number(clienteId) && p.estado === 'activo');
+            if (prestamosActivos.length === 0) return { nivel: 'bajo', texto: 'Sin Deuda', clase: 'bg-slate-100 text-slate-600 border-slate-200' };
+
+            let maxDiasAtraso = 0;
+            prestamosActivos.forEach(p => {
+                const info = calcularEstadoCuotasYCapitalizacion(p);
+                if (info.diasAtraso > maxDiasAtraso) maxDiasAtraso = info.diasAtraso;
+            });
+
+            if (maxDiasAtraso > 7) {
+                return { nivel: 'alto', texto: 'Alto Riesgo (Moroso)', clase: 'bg-red-50 text-red-700 border-red-200' };
+            } else if (maxDiasAtraso >= 3) {
+                return { nivel: 'medio', texto: 'Riesgo Moderado', clase: 'bg-amber-50 text-amber-700 border-amber-200' };
+            } else {
+                return { nivel: 'bajo', texto: 'Cliente Puntual', clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+            }
+        }
+ function verExpedienteCliente(id) {
+            clienteSeleccionadoId = id;
+            const cliente = clientes.find(c => c.id === id);
+            if (!cliente) return;
+
+            document.getElementById('vista-lista-clientes').classList.add('hidden');
+            const vistaExp = document.getElementById('vista-expediente-cliente');
+            vistaExp.classList.remove('hidden');
+            vistaExp.classList.add('animate-scale-in');
+
+            document.getElementById('exp-avatar').textContent = cliente.nombre.substring(0, 2).toUpperCase();
+            document.getElementById('exp-nombre').textContent = cliente.nombre;
+            document.getElementById('exp-contacto').textContent = `Cédula: ${cliente.cedula || 'N/T'} | Teléfono: ${cliente.telefono || 'N/T'}`;
+            document.getElementById('exp-notas-cliente').value = cliente.notas || '';
+
+            const prestamosCliente = prestamos.filter(p => p.clienteId === Number(id));
+            const prestamosActivos = prestamosCliente.filter(p => p.estado === 'activo');
+            const prestamosFinalizados = prestamosCliente.filter(p => p.estado === 'finalizado');
+
+            const deudaTotal = prestamosActivos.reduce((acc, p) => acc + p.capitalActual, 0);
+            const interesTotal = prestamosActivos.reduce((acc, p) => acc + calcularInteresesPendientesNetos(p), 0);
+            const pagosCliente = pagos.filter(pg => prestamosCliente.some(p => p.id === pg.prestamoId));
+            const pagadoTotal = pagosCliente.reduce((acc, pg) => acc + pg.monto, 0);
+
+            document.getElementById('exp-deuda-total').textContent = `$${deudaTotal.toFixed(2)}`;
+            document.getElementById('exp-interes-total').textContent = `$${interesTotal.toFixed(2)}`;
+            document.getElementById('exp-pagado-total').textContent = `$${pagadoTotal.toFixed(2)}`;
+
+            const listaP = document.getElementById('exp-lista-prestamos');
+            listaP.innerHTML = '';
+            if (prestamosActivos.length === 0) {
+                listaP.innerHTML = `<p class="text-xs text-slate-400">Este cliente no tiene préstamos activos.</p>`;
+            } else {
+                prestamosActivos.forEach(p => {
+                    const intNeto = calcularInteresesPendientesNetos(p);
+                    const card = document.createElement('div');
+                    card.className = "border border-slate-200/80 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5";
+                    card.innerHTML = `
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-slate-800 text-xs sm:text-base">$${p.capitalActual.toFixed(2)}</span>
+                                <span class="text-[10px] sm:text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full uppercase">${p.frecuencia}</span>
+                                <span class="text-[10px] sm:text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">ACTIVO</span>
+                            </div>
+                            <p class="text-[11px] sm:text-xs text-slate-600">Tasa: ${p.tasaInteres}% | Interés neto: <strong class="${intNeto > 0 ? 'text-amber-600' : 'text-emerald-600'}">$${intNeto.toFixed(2)}</strong></p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-between pt-2 md:pt-0 border-t md:border-0 border-slate-200">
+                            <button onclick="enviarWhatsAppCobro(${p.id})" title="WhatsApp" class="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-xl transition"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
+                            <button onclick="abrirModalPago(${p.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-xs flex items-center gap-1"><i data-lucide="badge-dollar-sign" class="w-3.5 h-3.5"></i> Cobrar</button>
+                            <button onclick="confirmarEliminarPrestamo(${p.id})" title="Eliminar" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/80 p-1.5 rounded-xl text-xs transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    `;
+                    listaP.appendChild(card);
+                });
+            }
+
+            const listaF = document.getElementById('exp-lista-prestamos-finalizados');
+            if (listaF) {
+                listaF.innerHTML = '';
+                if (prestamosFinalizados.length === 0) {
+                    listaF.innerHTML = `<p class="text-xs text-slate-400">Sin préstamos finalizados en el historial.</p>`;
+                } else {
+                    prestamosFinalizados.forEach(p => {
+                        const card = document.createElement('div');
+                        card.className = "border border-slate-200/60 p-3 rounded-2xl bg-slate-50/50 flex justify-between items-center text-xs";
+                        card.innerHTML = `
+                            <div>
+                                <span class="font-bold text-slate-700">Préstamo Inicial: $${p.capitalInicial.toFixed(2)}</span>
+                                <p class="text-[10px] text-slate-400">Iniciado el ${p.fechaInicio} (${p.tasaInteres}% ${p.frecuencia})</p>
+                            </div>
+                            <span class="bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i> SALDADO</span>
+                        `;
+                        listaF.appendChild(card);
+                    });
+                }
+            }
+
+            renderizarHistorialPagosCliente();
+            lucide.createIcons();
+        }
+
+        function renderizarHistorialPagosCliente() {
+            const listaH = document.getElementById('exp-historial-pagos');
+            if (!listaH) return;
+            const cliente = clientes.find(c => c.id === clienteSeleccionadoId);
+            if (!cliente) return;
+
+            const prestamosCliente = prestamos.filter(p => p.clienteId === Number(clienteSeleccionadoId));
+            let pagosCliente = pagos.filter(pg => prestamosCliente.some(p => p.id === pg.prestamoId));
+
+            const fechaDesde = document.getElementById('filtro-fecha-desde')?.value;
+            const fechaHasta = document.getElementById('filtro-fecha-hasta')?.value;
+
+            if (fechaDesde) {
+                pagosCliente = pagosCliente.filter(pg => pg.fecha >= fechaDesde);
+            }
+            if (fechaHasta) {
+                pagosCliente = pagosCliente.filter(pg => pg.fecha <= fechaHasta);
+            }
+
+            listaH.innerHTML = '';
+            if (pagosCliente.length === 0) {
+                listaH.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">Sin historial de pagos en este rango de fechas.</p>`;
+            } else {
+                pagosCliente.forEach(pg => {
+                    const prestamoAsociado = prestamos.find(p => p.id === pg.prestamoId) || { capitalActual: 0 };
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center p-2.5 bg-slate-50/80 rounded-xl text-xs border border-slate-100 gap-2";
+                    row.innerHTML = `
+                        <div class="overflow-hidden">
+                            <span class="font-bold text-slate-800">${pg.fecha}</span> - 
+                            <span class="text-emerald-700 font-semibold uppercase">${pg.tipo.replace('_', ' ')}</span>
+                            <span class="text-slate-400 ml-1">($${pg.monto.toFixed(2)})</span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="font-black text-slate-900">$${pg.monto.toFixed(2)}</span>
+                            <button onclick='abrirComprobanteExistente(${JSON.stringify(pg)}, ${JSON.stringify(cliente)}, ${prestamoAsociado.capitalActual})' class="group inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-indigo-600 text-slate-700 hover:text-white rounded-xl text-xs font-bold transition-all duration-200 shadow-xs hover:shadow-md hover:shadow-indigo-500/20 border border-slate-200/80 hover:border-indigo-600" title="Ver Comprobante">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5 text-indigo-600 group-hover:text-white transition-transform group-hover:scale-110"></i>
+                                <span>Recibo</span>
+                            </button>
+                        </div>
+                    `;
+                    listaH.appendChild(row);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        async function guardarNotasClienteActual() {
+            if (!clienteSeleccionadoId) return;
+            const notas = document.getElementById('exp-notas-cliente').value;
+
+            const { error } = await supabaseClient.from('clientes').update({
+                notas: notas
+            }).eq('id', Number(clienteSeleccionadoId));
+
+            if (error) {
+                mostrarToast("Error al guardar notas: " + error.message);
+                return;
+            }
+
+            const index = clientes.findIndex(c => c.id === Number(clienteSeleccionadoId));
+            if (index !== -1) clientes[index].notas = notas;
+
+            mostrarToast("✅ Notas de gestión guardadas con éxito.");
+        }
+
+        function limpiarFiltroFechasCliente() {
+            document.getElementById('filtro-fecha-desde').value = '';
+            document.getElementById('filtro-fecha-hasta').value = '';
+            renderizarHistorialPagosCliente();
+        }
+
+        function cerrarExpedienteCliente() {
+            clienteSeleccionadoId = null;
+            document.getElementById('vista-expediente-cliente').classList.add('hidden');
+            document.getElementById('vista-lista-clientes').classList.remove('hidden');
+            renderizarClientes();
+        }
+
+        function enviarWhatsAppCliente() {
+            const cliente = clientes.find(c => c.id === clienteSeleccionadoId);
+            if (!cliente || !cliente.telefono) {
+                mostrarToast("Este cliente no tiene un número de teléfono registrado.");
+                return;
+            }
+            const prestamosCliente = prestamos.filter(p => p.clienteId === cliente.id && p.estado === 'activo');
+            const deudaTotal = prestamosCliente.reduce((sum, p) => sum + p.capitalActual, 0);
+            const interesTotal = prestamosCliente.reduce((sum, p) => sum + calcularInteresesPendientesNetos(p), 0);
+
+            const mensaje = `Hola *${cliente.nombre}*, te escribimos de parte de la administración para recordarte tu estado de cuenta actual:\n\n• Capital en Deuda: $${deudaTotal.toFixed(2)}\n• Intereses Pendientes: $${interesTotal.toFixed(2)}\n• Total a Pagar: $${(deudaTotal + interesTotal).toFixed(2)}\n\nPor favor comunícate para coordinar tu pago. ¡Gracias!`;
+            const url = `https://api.whatsapp.com/send?phone=${encodeURIComponent(cliente.telefono)}&text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank');
+        }
+
+function enviarWhatsAppCobro(prestamoId) {
+            const p = prestamos.find(item => item.id === prestamoId);
+            if (!p) return;
+            const cliente = clientes.find(c => c.id === p.clienteId);
+            if (!cliente || !cliente.telefono) {
+                mostrarToast("El cliente no tiene teléfono registrado.", "warning");
+                return;
+            }
+            
+            // Limpiamos el número de teléfono eliminando espacios, guiones y paréntesis
+            const telefonoLimpio = cliente.telefono.replace(/\D/g, '');
+            
+            const intNeto = calcularInteresesPendientesNetos(p);
+            const totalPendiente = p.capitalActual + intNeto;
+            
+            // Mensaje rediseñado con formato profesional y claro
+            const mensaje = `Hola *${cliente.nombre}*, reciba un cordial saludo. Le escribimos para recordarle que tiene un saldo pendiente correspondiente a su crédito actual:\n\n• *Capital Actual:* $${p.capitalActual.toFixed(2)}\n• *Interés Acumulado:* $${intNeto.toFixed(2)}\n• *Total a Cancelar:* *$${totalPendiente.toFixed(2)}*\n\nAgradecemos su pronta atención para coordinar el pago del período. ¡Muchas gracias por su puntualidad y confianza!`;
+            
+            // Usamos el enlace directo de wa.me
+            const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank');
+        }
+
+        function abrirModalRecibo(pagoObj, clienteObj, capitalRestante) {
+            ultimoPagoRegistradoData = { pago: pagoObj, cliente: clienteObj, capitalRestante };
+            document.getElementById('recibo-id').textContent = `#REC-${pagoObj.id || Math.floor(Math.random() * 90000 + 10000)}`;
+            document.getElementById('recibo-fecha').textContent = pagoObj.fecha;
+            document.getElementById('recibo-cliente').textContent = clienteObj ? clienteObj.nombre : 'Cliente';
+            document.getElementById('recibo-tipo').textContent = pagoObj.tipo.replace('_', ' ');
+            document.getElementById('recibo-capital-restante').textContent = `$${capitalRestante.toFixed(2)}`;
+            document.getElementById('recibo-monto').textContent = `$${pagoObj.monto.toFixed(2)}`;
+
+            document.getElementById('modal-recibo').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function abrirComprobanteExistente(pagoObj, clienteObj, capitalRestante) {
+            abrirModalRecibo(pagoObj, clienteObj, capitalRestante);
+        }
+
+        function cerrarModalRecibo() {
+            document.getElementById('modal-recibo').classList.add('hidden');
+        }
+
+        function enviarReciboWhatsApp() {
+            if (!ultimoPagoRegistradoData) return;
+            const { pago, cliente, capitalRestante } = ultimoPagoRegistradoData;
+            if (!cliente || !cliente.telefono) {
+                mostrarToast("El cliente no tiene teléfono.");
+                return;
+            }
+            const mensaje = `🧾 *COMPROBANTE DE PAGO CREDITYX*\n\n• Cliente: ${cliente.nombre}\n• Fecha: ${pago.fecha}\n• Operación: ${pago.tipo.toUpperCase()}\n• Monto Pagado: $${pago.monto.toFixed(2)}\n• Capital Restante: $${capitalRestante.toFixed(2)}\n\n¡Gracias por tu pago!`;
+            const url = `https://api.whatsapp.com/send?phone=${encodeURIComponent(cliente.telefono)}&text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank');
+        }
+
+        async function eliminarPrestamo(id) {
+            const { error } = await supabaseClient.from('prestamos').delete().eq('id', id);
+            if (error) {
+                mostrarToast("Error al eliminar el préstamo: " + error.message);
+                return;
+            }
+            await cargarDatosUsuario();
+            refrescarInterfazActual();
+        }
+
+        function confirmarEliminarPrestamo(id) {
+            const p = prestamos.find(item => item.id === id);
+            if (!p) return;
+            const cliente = clientes.find(c => c.id === p.clienteId);
+            if (confirm(`¿Eliminar el préstamo de $${p.capitalActual.toFixed(2)} de ${cliente ? cliente.nombre : 'este cliente'}?`)) {
+                eliminarPrestamo(id);
+            }
+        }
+
+        async function eliminarCliente(id) {
+            const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
+            if (error) {
+                mostrarToast("Error al eliminar el cliente: " + error.message);
+                return;
+            }
+            if (clienteSeleccionadoId === id) cerrarExpedienteCliente();
+            await cargarDatosUsuario();
+            refrescarInterfazActual();
+        }
+
+        function confirmarEliminarClienteDirecto(id) {
+            const cliente = clientes.find(c => c.id === id);
+            if (!cliente) return;
+            if (confirm(`¿Deseas eliminar al cliente "${cliente.nombre}" y todos sus registros?`)) {
+                eliminarCliente(id);
+            }
+        }
+
+        function abrirModalNuevoCliente() {
+            document.getElementById('modal-cliente-titulo').innerHTML = `<i data-lucide="user-plus" class="w-5 h-5 text-indigo-600"></i> Registrar Nuevo Cliente`;
+            document.getElementById('c-id-editar').value = "";
+            document.getElementById('formNuevoCliente').reset();
+            document.getElementById('c-cedula-tipo').value = "V";
+            document.getElementById('c-tel-codigo').value = "+58";
+            document.getElementById('modal-cliente').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function abrirModalEditarCliente(id) {
+            const cliente = clientes.find(c => c.id === Number(id));
+            if (!cliente) return;
+
+            document.getElementById('modal-cliente-titulo').innerHTML = `<i data-lucide="user-pen" class="w-5 h-5 text-indigo-600"></i> Editar Cliente`;
+            document.getElementById('c-id-editar').value = cliente.id;
+            document.getElementById('c-nombre').value = cliente.nombre;
+
+            // Separar la cédula guardada (Ej: "V-12345678" -> tipo="V", num="12345678")
+            if (cliente.cedula && cliente.cedula.includes('-')) {
+                const partesCed = cliente.cedula.split('-');
+                document.getElementById('c-cedula-tipo').value = partesCed[0];
+                document.getElementById('c-cedula-num').value = partesCed.slice(1).join('-');
+            } else {
+                document.getElementById('c-cedula-tipo').value = "V";
+                document.getElementById('c-cedula-num').value = cliente.cedula || "";
+            }
+
+            // Separar el teléfono guardado (Ej: "+58 412-1994196")[cite: 1]
+            if (cliente.telefono) {
+                let telLimpio = cliente.telefono.trim();
+                if (telLimpio.startsWith('+')) {
+                    let espacioIdx = telLimpio.indexOf(' ');
+                    if (espacioIdx !== -1) {
+                        document.getElementById('c-tel-codigo').value = telLimpio.substring(0, espacioIdx);
+                        document.getElementById('c-tel-num').value = telLimpio.substring(espacioIdx + 1).replace(/-/g, '');
+                    } else {
+                        document.getElementById('c-tel-num').value = telLimpio;
+                    }
+                } else {
+                    document.getElementById('c-tel-num').value = telLimpio;
+                }
+            } else {
+                document.getElementById('c-tel-num').value = "";
+            }
+
+            document.getElementById('modal-cliente').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function abrirModalEditarClienteActual() {
+            if (clienteSeleccionadoId) abrirModalEditarCliente(clienteSeleccionadoId);
+        }
+
+        function cerrarModalNuevoCliente() {
+            document.getElementById('modal-cliente').classList.add('hidden');
+            document.getElementById('formNuevoCliente').reset();
+        }
+
+        async function guardarClienteModal(e) {
+            e.preventDefault();
+            const idEditar = document.getElementById('c-id-editar').value;
+            const nombre = document.getElementById('c-nombre').value.trim();
+            
+            // Armar cédula con formato "V-12345678"[cite: 1]
+            const tipoCed = document.getElementById('c-cedula-tipo').value;
+            const numCed = document.getElementById('c-cedula-num').value.trim().replace(/-/g, '');
+            const cedulaFinal = `${tipoCed}-${numCed}`;
+
+            // Armar teléfono tomando el código escrito a mano en la caja de texto[cite: 1]
+            let codTel = document.getElementById('c-tel-codigo').value.trim();
+            if (!codTel.startsWith('+')) codTel = '+' + codTel;
+            
+            let numTel = document.getElementById('c-tel-num').value.trim().replace(/\D/g, ''); // Solo números
+            
+            if (numTel.length > 3 && !numTel.includes('-')) {
+                numTel = numTel.substring(0, 3) + '-' + numTel.substring(3);
+            }
+            const telefonoFinal = `${codTel} ${numTel}`;
+
+            if (idEditar) {
+                await supabaseClient.from('clientes').update({
+                    nombre: nombre,
+                    telefono: telefonoFinal,
+                    cedula: cedulaFinal
+                }).eq('id', Number(idEditar));
+            } else {
+                await supabaseClient.from('clientes').insert([{
+                    usuario: prestamistaSesion,
+                    nombre: nombre,
+                    telefono: telefonoFinal,
+                    cedula: cedulaFinal
+                }]);
+            }
+
+            cerrarModalNuevoCliente();
+            await cargarDatosUsuario();
+            refrescarInterfazActual();
+        }
+
+        function abrirModalNuevoPrestamoParaCliente() {
+            if (clienteSeleccionadoId) {
+                cambiarPanel('nuevo-prestamo');
+                document.getElementById('p-cliente-select').value = clienteSeleccionadoId;
+            }
+        }
+
+        document.getElementById('formPrestamo').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const clienteId = parseInt(document.getElementById('p-cliente-select').value);
+            if (!clienteId) return mostrarToast("Selecciona un cliente.", "warning");
+            const monto = parseFloat(document.getElementById('p-monto').value);
+
+            const { error } = await supabaseClient.from('prestamos').insert([{
+                usuario: prestamistaSesion,
+                cliente_id: clienteId,
+                capital_inicial: monto,
+                capital_actual: monto,
+                fecha_inicio: document.getElementById('p-fecha-inicio').value,
+                tasa_interes: parseFloat(document.getElementById('p-tasa').value),
+                frecuencia: document.getElementById('p-frecuencia').value,
+                saldo_pendiente_interes: 0,
+                intereses_congelados: false,
+                estado: 'activo'
+            }]);
+
+            if (error) {
+                mostrarToast("Error al guardar el préstamo: " + error.message);
+                return;
+            }
+
+            document.getElementById('formPrestamo').reset();
+            document.getElementById('p-fecha-inicio').valueAsDate = new Date();
+            
+            await cargarDatosUsuario();
+            await cambiarPanel('dashboard');
+        });
+
+        function renderizarCobranzas() {
+            const lista = document.getElementById('lista-cobranzas-completa');
+            if (!lista) return;
+            const filtro = document.getElementById('filtro-cobros').value;
+            lista.innerHTML = '';
+
+            let activos = prestamos.filter(p => p.estado === 'activo');
+
+            let totalCobrosMonto = 0;
+            let countHoy = 0;
+            let totalAtrasadosMonto = 0;
+
+            activos.forEach(p => {
+                const intNeto = calcularInteresesPendientesNetos(p);
+                totalCobrosMonto += (p.capitalActual + intNeto);
+                if (esCobroHoy(p)) countHoy++;
+                if (intNeto > 0) totalAtrasadosMonto += intNeto;
+            });
+
+            document.getElementById('cobros-stat-total').textContent = `$${totalCobrosMonto.toFixed(2)}`;
+            document.getElementById('cobros-stat-hoy').textContent = countHoy;
+            document.getElementById('cobros-stat-atrasados').textContent = `$${totalAtrasadosMonto.toFixed(2)}`;
+
+            if (filtro === 'hoy') {
+                activos = activos.filter(p => esCobroHoy(p));
+            } else if (filtro === 'atrasados') {
+                activos = activos.filter(p => calcularInteresesPendientesNetos(p) > 0);
+            }
+
+            if (activos.length === 0) {
+                lista.innerHTML = `<p class="text-slate-400 text-xs sm:text-sm text-center py-10">No hay registros que coincidan con este filtro.</p>`;
+                return;
+            }
+
+            activos.forEach(p => {
+                const cliente = clientes.find(c => c.id === Number(p.clienteId));
+                const intNeto = calcularInteresesPendientesNetos(p);
+                const infoCuotas = calcularEstadoCuotasYCapitalizacion(p);
+                const nombreCliente = cliente ? cliente.nombre : 'Cliente Desconocido';
+                const iniciales = nombreCliente.substring(0, 2).toUpperCase();
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-50/70 hover:bg-slate-50 transition border border-slate-200/80 p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-scale-in";
+                card.innerHTML = `
+                    <div class="flex items-start gap-3.5">
+                        <div class="w-12 h-12 bg-indigo-50 text-indigo-700 font-black rounded-2xl flex items-center justify-center text-sm border border-indigo-100 shrink-0 shadow-xs">
+                            ${iniciales}
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base">${nombreCliente}</h3>
+                                <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">${p.frecuencia}</span>
+                                ${p.interesesCongelados ? '<span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1"><i data-lucide="snowflake" class="w-3 h-3"></i> Congelado</span>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-500">Capital Base: <strong class="text-slate-800">$${p.capitalActual.toFixed(2)}</strong> | Inicio: ${p.fechaInicio}</p>
+                            <div class="flex items-center gap-3 pt-1 flex-wrap text-xs">
+                                <span class="font-bold ${intNeto > 0 ? 'text-amber-600' : 'text-emerald-600'}">
+                                    Interés acumulado: $${intNeto.toFixed(2)}
+                                </span>
+                                <span class="text-slate-400">•</span>
+                                <span class="text-slate-600 font-medium">
+                                    ⏳ Sin pagar: <strong class="text-amber-600">${infoCuotas.cuotasSinPagar} cuota(s)</strong> (${infoCuotas.diasAtraso} días)
+                                    ${infoCuotas.sugerirCapitalizacion ? '<span class="ml-1 bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">💡 Capitalizar</span>' : ''}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end pt-3 md:pt-0 border-t md:border-0 border-slate-200/80">
+                        <button onclick="enviarWhatsAppCobro(${p.id})" title="Enviar WhatsApp" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-xl transition shadow-xs flex items-center justify-center"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
+                        <button onclick="toggleCongelarIntereses(${p.id})" title="${p.interesesCongelados ? 'Descongelar' : 'Congelar'}" class="px-3 py-2.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1 shadow-xs ${p.interesesCongelados ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
+                            <i data-lucide="snowflake" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="abrirModalCapitalizar(${p.id})" title="Capitalizar" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 p-2.5 rounded-xl text-xs font-bold transition inline-flex items-center justify-center shadow-xs">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="abrirModalPago(${p.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5">
+                            <i data-lucide="badge-dollar-sign" class="w-4 h-4"></i> Cobrar
+                        </button>
+                        <button onclick="confirmarEliminarPrestamo(${p.id})" title="Eliminar" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/80 p-2.5 rounded-xl text-xs transition shadow-xs"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+                lista.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function abrirModalPago(prestamoId) {
+            const p = prestamos.find(item => item.id === prestamoId);
+            if (!p) return;
+            const cliente = clientes.find(c => c.id === Number(p.clienteId));
+
+            document.getElementById('pago-prestamo-id').value = p.id;
+            document.getElementById('pago-modal-cliente').textContent = cliente ? cliente.nombre : '-';
+            document.getElementById('pago-modal-capital').textContent = p.capitalActual.toFixed(2);
+            
+            const intNeto = calcularInteresesPendientesNetos(p);
+            document.getElementById('pago-modal-intereses').textContent = intNeto.toFixed(2);
+            document.getElementById('pago-monto').value = (p.capitalActual + intNeto).toFixed(2);
+
+            document.getElementById('modal-pago').classList.remove('hidden');
+        }
+
+function mostrarToast(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            
+            let borderColor = "border-slate-800";
+            let dotColor = "bg-indigo-500 shadow-indigo-500/50";
+            let barColor = "bg-indigo-500";
+
+            if (tipo === 'error') {
+                borderColor = "border-red-500/30";
+                dotColor = "bg-red-500 shadow-red-500/50";
+                barColor = "bg-red-500";
+            } else if (tipo === 'warning') {
+                // 🎨 NUEVOS TONOS PARA QUE COMBINE CON LA INTERFAZ (Gris oscuro/Azulado elegante)
+                borderColor = "border-slate-700";
+                dotColor = "bg-indigo-400 shadow-indigo-400/50";
+                barColor = "bg-indigo-500";
+            } else if (tipo === 'success') {
+                borderColor = "border-emerald-500/30";
+                dotColor = "bg-emerald-400 shadow-emerald-400/50";
+                barColor = "bg-emerald-400";
+            }
+
+            toast.className = `pointer-events-auto relative overflow-hidden bg-slate-900/95 backdrop-blur-xl text-white border ${borderColor} p-3.5 sm:p-4 rounded-2xl shadow-2xl shadow-slate-950/70 transition-all duration-300 animate-scale-in flex flex-col gap-2.5 max-w-sm w-full`;
+            
+            toast.innerHTML = `
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <span class="w-2.5 h-2.5 rounded-full ${dotColor} shrink-0 shadow-lg animate-pulse"></span>
+                        <p class="text-xs sm:text-sm font-medium text-slate-200 tracking-wide leading-relaxed">${mensaje}</p>
+                    </div>
+                    <button onclick="this.closest('.pointer-events-auto').remove()" class="text-slate-500 hover:text-slate-300 p-1 rounded-lg transition shrink-0">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-slate-800/90 overflow-hidden rounded-b-2xl">
+                    <div id="toast-progress" class="h-full ${barColor} w-full transition-all linear duration-[4000ms]"></div>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                const progressBar = toast.querySelector('#toast-progress');
+                if (progressBar) progressBar.style.width = '0%';
+            }, 50);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(12px) scale(0.95)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function cerrarModalPago() { 
+            document.getElementById('modal-pago').classList.add('hidden'); 
+        }
+
+        document.getElementById('formRegistrarPago').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('pago-prestamo-id').value);
+            const p = prestamos.find(item => item.id === id);
+            if (!p) return;
+
+            const tipo = document.getElementById('pago-tipo').value;
+            const monto = parseFloat(document.getElementById('pago-monto').value);
+            const fecha = document.getElementById('pago-fecha').value;
+
+            if (monto <= 0) return;
+
+            const intNeto = calcularInteresesPendientesNetos(p);
+            let nuevoCapital = p.capitalActual;
+            let nuevoEstado = p.estado;
+            let nuevaFechaInicio = p.fechaInicio;
+
+            if (tipo === 'abono_capital') {
+                nuevoCapital = Math.max(0, p.capitalActual - monto);
+            } else if (tipo === 'cuota_completa') {
+                if (monto >= intNeto) {
+                    const excedenteCapital = monto - intNeto;
+                    nuevoCapital = Math.max(0, p.capitalActual - excedenteCapital);
+                }
+            } else if (tipo === 'solo_intereses') {
+                if (monto >= p.capitalActual + intNeto) {
+                    nuevoCapital = 0;
+                }
+            }
+
+            if (nuevoCapital <= 0.05 || monto >= (p.capitalActual + intNeto - 0.05)) {
+                nuevoCapital = 0;
+                nuevoEstado = 'finalizado';
+            }   
+
+            await supabaseClient.from('prestamos').update({
+                capital_actual: nuevoCapital,
+                estado: nuevoEstado,
+                saldo_pendiente_interes: 0
+            }).eq('id', p.id);
+
+            const { data: pagoInsertado } = await supabaseClient.from('pagos').insert([{
+                usuario: prestamistaSesion,
+                prestamo_id: p.id,
+                monto: monto,
+                tipo: tipo,
+                fecha: fecha
+            }]).select();
+
+            cerrarModalPago();
+            await cargarDatosUsuario();
+            refrescarInterfazActual();
+
+            const clienteAsociado = clientes.find(c => c.id === p.clienteId);
+            const objetoPagoRecibo = pagoInsertado ? pagoInsertado[0] : { id: Math.floor(Math.random()*90000), fecha, tipo, monto };
+            
+            abrirModalRecibo(objetoPagoRecibo, clienteAsociado, nuevoCapital);
+        });
+    </script>
+
+
+</body>
+<!-- ==================== CONTENEDOR DE NOTIFICACIONES FLOTANTES (TOASTS) ==================== -->
+<div id="toast-container" class="fixed top-5 right-5 z-[999999] flex flex-col gap-2.5 max-w-sm w-full px-4"></div>
+</html> 

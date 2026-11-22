@@ -641,50 +641,84 @@
                         </button>
                     </div>
                 </div>
+<!-- ==================== MODAL DETALLE DE MÉTRICAS (KPIs) ==================== -->
+    <div id="modal-detalle-kpi" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3.5 sm:p-4 overflow-y-auto opacity-0 transition-opacity duration-200">
+        <div id="kpi-modal-card" class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto max-h-[85vh] flex flex-col opacity-0 translate-y-3 transition-all duration-200 ease-out">
+            <div class="flex justify-between items-center pb-3.5 border-b border-slate-100 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div id="kpi-modal-icono-wrap" class="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
+                        <i id="kpi-modal-icono" data-lucide="wallet" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 id="kpi-modal-titulo" class="font-black text-base sm:text-lg text-slate-900">Detalle</h3>
+                        <p id="kpi-modal-subtitulo" class="text-[11px] sm:text-xs text-slate-500">Desglose en tiempo real</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModalDetalleKPI()" class="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-2 rounded-xl transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
 
-                <!-- Tarjetas de Métricas Principales (Grid Móvil de 2 Columnas) -->
+            <div class="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 my-4 flex justify-between items-center shrink-0">
+                <span id="kpi-modal-resumen-label" class="text-xs font-bold uppercase tracking-wider text-slate-500">Total</span>
+                <span id="kpi-modal-resumen-valor" class="text-lg sm:text-xl font-black text-slate-900">$0.00</span>
+            </div>
+
+            <div id="kpi-modal-lista" class="space-y-2.5 overflow-y-auto custom-scrollbar pr-1 flex-1 text-xs sm:text-sm"></div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end shrink-0">
+                <button type="button" onclick="cerrarModalDetalleKPI()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+<!-- Tarjetas de Métricas Principales (Grid Móvil de 2 Columnas) -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-indigo-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
+                    <div onclick="abrirModalDetalleKPI('capital')" role="button" tabindex="0" class="cursor-pointer bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-indigo-400 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
                         <div class="flex justify-between items-start mb-2 sm:mb-3">
                             <span class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Capital en Calle</span>
                             <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition"><i data-lucide="wallet" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></div>
                         </div>
                         <div>
                             <h3 class="text-base sm:text-2xl font-black text-slate-900 truncate" id="dash-capital">$0.00</h3>
-                            <p class="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Activo principal</p>
+                            <p class="text-[10px] sm:text-[11px] text-indigo-500 font-semibold mt-0.5">Ver detalle por cliente →</p>
                         </div>
                     </div>
 
-                    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-amber-300 transition group">
+                    <div onclick="abrirModalDetalleKPI('intereses')" role="button" tabindex="0" class="cursor-pointer bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-amber-400 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
                         <div class="flex justify-between items-start mb-2 sm:mb-3">
                             <span class="text-[10px] sm:text-[11px] font-bold text-amber-600 uppercase tracking-wider">Intereses por Cobrar</span>
                             <div class="p-2 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition"><i data-lucide="percent" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></div>
                         </div>
                         <div>
                             <h3 class="text-base sm:text-2xl font-black text-amber-600 truncate" id="dash-intereses">$0.00</h3>
-                            <p class="text-[10px] sm:text-[11px] text-amber-500/80 mt-0.5">Pendientes acumulados</p>
+                            <p class="text-[10px] sm:text-[11px] text-amber-600/80 font-semibold mt-0.5">Ver desglose pendiente →</p>
                         </div>
                     </div>
 
-                    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-emerald-300 transition group">
+                    <div onclick="abrirModalDetalleKPI('cobrado')" role="button" tabindex="0" class="cursor-pointer bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-emerald-400 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
                         <div class="flex justify-between items-start mb-2 sm:mb-3">
                             <span class="text-[10px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Cobrado Histórico</span>
                             <div class="p-2 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition"><i data-lucide="badge-dollar-sign" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></div>
                         </div>
                         <div>
                             <h3 class="text-base sm:text-2xl font-black text-emerald-600 truncate" id="dash-cobrado">$0.00</h3>
-                            <p class="text-[10px] sm:text-[11px] text-emerald-500/80 mt-0.5">Ingresos registrados</p>
+                            <p class="text-[10px] sm:text-[11px] text-emerald-600/80 font-semibold mt-0.5">Ver historial de cobros →</p>
                         </div>
                     </div>
 
-                    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-violet-300 transition group">
+                    <div onclick="abrirModalDetalleKPI('activos')" role="button" tabindex="0" class="cursor-pointer bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:border-violet-400 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
                         <div class="flex justify-between items-start mb-2 sm:mb-3">
                             <span class="text-[10px] sm:text-[11px] font-bold text-violet-600 uppercase tracking-wider">Préstamos Activos</span>
                             <div class="p-2 bg-violet-50 text-violet-600 rounded-xl group-hover:bg-violet-600 group-hover:text-white transition"><i data-lucide="file-text" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></div>
                         </div>
                         <div>
                             <h3 class="text-base sm:text-2xl font-black text-violet-600 truncate" id="dash-activos">0</h3>
-                            <p class="text-[10px] sm:text-[11px] text-violet-400 mt-0.5">Créditos en curso</p>
+                            <p class="text-[10px] sm:text-[11px] text-violet-500 font-semibold mt-0.5">Ver créditos en curso →</p>
                         </div>
                     </div>
                 </div>
@@ -3310,7 +3344,186 @@ let chartIngresosInstance = null;
             }
         }
 
+        function cerrarModalDetalleKPI() {
+            const modal = document.getElementById('modal-detalle-kpi');
+            const card = document.getElementById('kpi-modal-card');
+            if (!modal) return;
 
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            if (card) {
+                card.classList.remove('opacity-100', 'translate-y-0');
+                card.classList.add('opacity-0', 'translate-y-3');
+            }
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function abrirModalDetalleKPI(tipo) {
+            const modal = document.getElementById('modal-detalle-kpi');
+            const card = document.getElementById('kpi-modal-card');
+            const lista = document.getElementById('kpi-modal-lista');
+            const titulo = document.getElementById('kpi-modal-titulo');
+            const subtitulo = document.getElementById('kpi-modal-subtitulo');
+            const resumenLabel = document.getElementById('kpi-modal-resumen-label');
+            const resumenValor = document.getElementById('kpi-modal-resumen-valor');
+            const icono = document.getElementById('kpi-modal-icono');
+            const iconoWrap = document.getElementById('kpi-modal-icono-wrap');
+
+            if (!modal || !lista) return;
+
+            const listaPrestamos = Array.isArray(prestamos) ? prestamos : [];
+            const listaClientes = Array.isArray(clientes) ? clientes : [];
+            const listaPagos = Array.isArray(pagos) ? pagos : [];
+            const activos = listaPrestamos.filter(p => p.estado === 'activo');
+
+            lista.innerHTML = '';
+            lista.scrollTop = 0;
+            modal.scrollTop = 0;
+
+            if (tipo === 'capital') {
+                titulo.textContent = 'Capital en Calle';
+                subtitulo.textContent = 'Saldo de capital activo por cliente y préstamo';
+                resumenLabel.textContent = 'Capital Total en Calle';
+                const totalCap = activos.reduce((acc, p) => acc + (Number(p.capitalActual) || 0), 0);
+                resumenValor.textContent = `$${totalCap.toFixed(2)}`;
+                resumenValor.className = 'text-lg sm:text-xl font-black text-indigo-600';
+                icono.setAttribute('data-lucide', 'wallet');
+                iconoWrap.className = 'p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl';
+
+                if (activos.length === 0) {
+                    lista.innerHTML = `<p class="text-center text-slate-400 py-6">No hay capital activo en préstamos.</p>`;
+                } else {
+                    activos.forEach(p => {
+                        const cli = listaClientes.find(c => Number(c.id) === Number(p.clienteId));
+                        const item = document.createElement('div');
+                        item.className = 'p-3.5 bg-slate-50 border border-slate-200/70 rounded-2xl flex justify-between items-center gap-3';
+                        item.innerHTML = `
+                            <div>
+                                <p class="font-bold text-slate-800">${cli ? cli.nombre : 'Cliente'}</p>
+                                <p class="text-[11px] text-slate-500">${p.tasaInteres}% ${p.frecuencia} • Inicio: ${p.fechaInicio}</p>
+                            </div>
+                            <span class="font-black text-indigo-600 text-sm sm:text-base shrink-0">$${(Number(p.capitalActual) || 0).toFixed(2)}</span>
+                        `;
+                        lista.appendChild(item);
+                    });
+                }
+            } else if (tipo === 'intereses') {
+                titulo.textContent = 'Intereses por Cobrar';
+                subtitulo.textContent = 'Intereses acumulados pendientes por crédito activo';
+                resumenLabel.textContent = 'Total Intereses Pendientes';
+                const totalInt = activos.reduce((acc, p) => acc + calcularInteresesPendientesNetos(p), 0);
+                resumenValor.textContent = `$${totalInt.toFixed(2)}`;
+                resumenValor.className = 'text-lg sm:text-xl font-black text-amber-600';
+                icono.setAttribute('data-lucide', 'percent');
+                iconoWrap.className = 'p-2.5 bg-amber-50 text-amber-600 rounded-2xl';
+
+                const conInteres = activos.filter(p => calcularInteresesPendientesNetos(p) > 0);
+                if (conInteres.length === 0) {
+                    lista.innerHTML = `<p class="text-center text-slate-400 py-6">No hay intereses pendientes por cobrar.</p>`;
+                } else {
+                    conInteres.forEach(p => {
+                        const cli = listaClientes.find(c => Number(c.id) === Number(p.clienteId));
+                        const intNeto = calcularInteresesPendientesNetos(p);
+                        const cuotasInfo = calcularEstadoCuotasYCapitalizacion(p);
+                        const item = document.createElement('div');
+                        item.className = 'p-3.5 bg-amber-50/40 border border-amber-200/70 rounded-2xl flex justify-between items-center gap-3';
+                        item.innerHTML = `
+                            <div>
+                                <p class="font-bold text-slate-800">${cli ? cli.nombre : 'Cliente'}</p>
+                                <p class="text-[11px] text-slate-500">Cap: $${(Number(p.capitalActual) || 0).toFixed(2)} • ${cuotasInfo.cuotasSinPagar} cuota(s) pendiente(s)</p>
+                            </div>
+                            <span class="font-black text-amber-600 text-sm sm:text-base shrink-0">$${intNeto.toFixed(2)}</span>
+                        `;
+                        lista.appendChild(item);
+                    });
+                }
+            } else if (tipo === 'cobrado') {
+                titulo.textContent = 'Cobrado Histórico';
+                subtitulo.textContent = 'Últimos pagos registrados en el sistema';
+                resumenLabel.textContent = 'Total Cobrado Histórico';
+                const totalCobrado = listaPagos.reduce((acc, pg) => acc + (Number(pg.monto) || 0), 0);
+                resumenValor.textContent = `$${totalCobrado.toFixed(2)}`;
+                resumenValor.className = 'text-lg sm:text-xl font-black text-emerald-600';
+                icono.setAttribute('data-lucide', 'badge-dollar-sign');
+                iconoWrap.className = 'p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl';
+
+                if (listaPagos.length === 0) {
+                    lista.innerHTML = `<p class="text-center text-slate-400 py-6">Aún no hay cobros registrados.</p>`;
+                } else {
+                    const recientes = [...listaPagos].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+                    recientes.forEach(pg => {
+                        const pr = listaPrestamos.find(p => Number(p.id) === Number(pg.prestamoId));
+                        const cli = pr ? listaClientes.find(c => Number(c.id) === Number(pr.clienteId)) : null;
+                        const item = document.createElement('div');
+                        item.className = 'p-3.5 bg-emerald-50/40 border border-emerald-200/70 rounded-2xl flex justify-between items-center gap-3';
+                        item.innerHTML = `
+                            <div>
+                                <p class="font-bold text-slate-800">${cli ? cli.nombre : 'Cliente'}</p>
+                                <p class="text-[11px] text-slate-500">${pg.fecha} • ${String(pg.tipo || '').replace('_', ' ')}</p>
+                            </div>
+                            <span class="font-black text-emerald-600 text-sm sm:text-base shrink-0">+$${(Number(pg.monto) || 0).toFixed(2)}</span>
+                        `;
+                        lista.appendChild(item);
+                    });
+                }
+            } else if (tipo === 'activos') {
+                titulo.textContent = 'Préstamos Activos';
+                subtitulo.textContent = 'Créditos vigentes y su estado actual';
+                resumenLabel.textContent = 'Créditos Activos';
+                resumenValor.textContent = `${activos.length}`;
+                resumenValor.className = 'text-lg sm:text-xl font-black text-violet-600';
+                icono.setAttribute('data-lucide', 'file-text');
+                iconoWrap.className = 'p-2.5 bg-violet-50 text-violet-600 rounded-2xl';
+
+                if (activos.length === 0) {
+                    lista.innerHTML = `<p class="text-center text-slate-400 py-6">No hay préstamos activos en este momento.</p>`;
+                } else {
+                    activos.forEach(p => {
+                        const cli = listaClientes.find(c => Number(c.id) === Number(p.clienteId));
+                        const intNeto = calcularInteresesPendientesNetos(p);
+                        const item = document.createElement('div');
+                        item.className = 'p-3.5 bg-violet-50/40 border border-violet-200/70 rounded-2xl flex justify-between items-center gap-3';
+                        item.innerHTML = `
+                            <div>
+                                <p class="font-bold text-slate-800">${cli ? cli.nombre : 'Cliente'}</p>
+                                <p class="text-[11px] text-slate-500">Cap: $${(Number(p.capitalActual) || 0).toFixed(2)} • Interés pend: $${intNeto.toFixed(2)}</p>
+                            </div>
+                            <span class="bg-violet-100 text-violet-700 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase shrink-0">${p.frecuencia}</span>
+                        `;
+                        lista.appendChild(item);
+                    });
+                }
+            }
+
+            modal.classList.remove('hidden');
+            lista.scrollTop = 0;
+            modal.scrollTop = 0;
+            if (card) {
+                card.classList.remove('opacity-100', 'translate-y-0');
+                card.classList.add('opacity-0', 'translate-y-3');
+            }
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            modal.classList.remove('hidden');
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.remove('opacity-0');
+                    modal.classList.add('opacity-100');
+                    if (card) {
+                        card.classList.remove('opacity-0', 'translate-y-3');
+                        card.classList.add('opacity-100', 'translate-y-0');
+                    }
+                });
+            });
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            
+        }
         
     </script>
 

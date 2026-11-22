@@ -689,14 +689,37 @@
                     </div>
                 </div>
 
-                <!-- Gráfico de Rendimiento Financiero -->
+<!-- Gráfico de Rendimiento Financiero Semanal -->
                 <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
-                            <i data-lucide="trending-up" class="w-5 h-5 text-indigo-600"></i> Rendimiento de Ingresos Mensuales
-                        </h3>
-                        <span class="text-xs text-slate-400 font-medium">Histórico de cobranzas</span>
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 pb-4 border-b border-slate-100">
+                        <div>
+                            <h3 class="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-indigo-600"></i> Rendimiento Semanal de Cobranzas
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Flujo de caja por semana: Intereses cobrados vs. Capital recuperado</p>
+                        </div>
+                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/70 self-start sm:self-auto">
+                            <button type="button" onclick="cambiarRangoSemanas(6)" id="btn-sem-6" class="px-3 py-1 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow-xs transition">6 Sem</button>
+                            <button type="button" onclick="cambiarRangoSemanas(12)" id="btn-sem-12" class="px-3 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition">12 Sem</button>
+                        </div>
                     </div>
+
+                    <!-- Resumen limpio en 3 métricas clave -->
+                    <div class="grid grid-cols-3 gap-2.5 sm:gap-4 mb-5">
+                        <div class="bg-slate-50/90 border border-slate-200/60 rounded-2xl p-3 sm:p-3.5">
+                            <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total Semanas</span>
+                            <span id="kpi-sem-total" class="text-sm sm:text-lg font-black text-slate-900 mt-0.5 block">$0.00</span>
+                        </div>
+                        <div class="bg-emerald-50/50 border border-emerald-200/60 rounded-2xl p-3 sm:p-3.5">
+                            <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-600 block">Intereses</span>
+                            <span id="kpi-sem-intereses" class="text-sm sm:text-lg font-black text-emerald-600 mt-0.5 block">$0.00</span>
+                        </div>
+                        <div class="bg-indigo-50/50 border border-indigo-200/60 rounded-2xl p-3 sm:p-3.5">
+                            <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 block">Prom. Semanal</span>
+                            <span id="kpi-sem-promedio" class="text-sm sm:text-lg font-black text-indigo-600 mt-0.5 block">$0.00</span>
+                        </div>
+                    </div>
+
                     <div class="w-full h-64">
                         <canvas id="graficoIngresos"></canvas>
                     </div>
@@ -1981,51 +2004,72 @@ async function renderizarPanelAdminMaestro() {
             return diffDays >= 0 && (diffDays % diasPorPeriodo === 0 || calcularInteresesPendientesNetos(p) > 0);
         }
 
-        function calcularInteresesPendientesNetos(p) {
-            if (p.estado !== 'activo') return 0;
-            if (p.interesesCongelados) return p.saldoPendienteInteres || 0;
-
-            const interesPorPeriodo = p.capitalActual * (p.tasaInteres / 100);
-            
-            // Consultamos las cuotas pendientes calculadas desde la fecha de entrega inicial
-            const infoCuotas = calcularEstadoCuotasYCapitalizacion(p);
-            
-            // Multiplicamos las cuotas sin pagar por el monto de interés de cada periodo
-            const interesesGenerados = (infoCuotas.cuotasSinPagar * interesPorPeriodo) + (p.saldoPendienteInteres || 0);
-
-            return Math.max(0, interesesGenerados);
+function obtenerDiasPorFrecuencia(frecuencia) {
+            const freq = String(frecuencia || 'semanal').toLowerCase();
+            if (freq.includes('diario')) return 1;
+            if (freq.includes('catorcenal')) return 14;
+            if (freq.includes('quincenal')) return 15;
+            if (freq.includes('mensual')) return 30;
+            return 7;
         }
 
         function calcularEstadoCuotasYCapitalizacion(p) {
-            const hoy = new Date();
-            hoy.setHours(0,0,0,0);
-            
-            // Usamos la fecha de inicio ORIGINAL del préstamo como punto de referencia fijo
-            const fechaInicioOriginal = parsearFechaLocal(p.fechaInicio);
-            fechaInicioOriginal.setHours(0,0,0,0);
+            try {
+                if (!p) {
+                    return { diasAtraso: 0, cuotasSinPagar: 0, interesPendienteCalc: 0, sugerirCapitalizacion: false };
+                }
 
-            let diasPorPeriodo = 7;
-            if (p.frecuencia === 'diario') diasPorPeriodo = 1;
-            if (p.frecuencia === 'catorcenal') diasPorPeriodo = 14;
-            if (p.frecuencia === 'quincenal') diasPorPeriodo = 15;
-            if (p.frecuencia === 'mensual') diasPorPeriodo = 30;
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
 
-            // Días totales transcurridos desde que se entregó el préstamo el 12 de octubre
-            const diffTime = hoy.getTime() - fechaInicioOriginal.getTime();
-            const diasAtraso = Math.max(0, Math.floor(diffTime / (1000 * 3600 * 24)));
-            
-            // Cuotas totales correspondientes al tiempo transcurrido
-            const cuotasTotales = Math.floor(diasAtraso / diasPorPeriodo);
-            
-            // Contamos cuántas cuotas/pagos ha realizado el cliente en total
-            const pagosPrestamo = pagos.filter(pg => pg.prestamoId === p.id && (pg.tipo === 'solo_intereses' || pg.tipo === 'cuota_completa'));
-            const cuotasPagadas = pagosPrestamo.length;
+                const fechaInicio = parsearFechaLocal(p.fechaInicio);
+                fechaInicio.setHours(0, 0, 0, 0);
 
-            // Cuotas realmente pendientes
-            const cuotasSinPagar = Math.max(0, cuotasTotales - cuotasPagadas);
-            let sugerirCapitalizacion = cuotasSinPagar >= 3;
+                const diasPorPeriodo = obtenerDiasPorFrecuencia(p.frecuencia);
+                const diffDias = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 3600 * 24));
+                const diasAtraso = Math.max(0, isNaN(diffDias) ? 0 : diffDias);
 
-            return { diasAtraso, cuotasSinPagar, sugerirCapitalizacion };
+                const periodosCumplidos = Math.max(0, Math.floor(diasAtraso / diasPorPeriodo));
+                const capital = Number(p.capitalActual) || 0;
+                const tasa = Number(p.tasaInteres) || 0;
+                const interesPeriodo = capital * (tasa / 100);
+                const interesesGenerados = periodosCumplidos * interesPeriodo;
+
+                const listaPagos = Array.isArray(pagos) ? pagos : [];
+                const totalAbonadoInteres = listaPagos
+                    .filter(pg => pg && Number(pg.prestamoId) === Number(p.id) && (pg.tipo === 'solo_intereses' || pg.tipo === 'cuota_completa'))
+                    .reduce((acc, pg) => acc + (Number(pg.monto) || 0), 0);
+
+                const interesPendienteCalc = Math.max(0, interesesGenerados - totalAbonadoInteres);
+
+                const cuotasSinPagar = interesPeriodo > 0
+                    ? Math.max(0, Math.ceil((interesPendienteCalc - 0.009) / interesPeriodo))
+                    : 0;
+
+                return {
+                    diasAtraso,
+                    cuotasSinPagar,
+                    interesPendienteCalc,
+                    sugerirCapitalizacion: cuotasSinPagar >= 3
+                };
+            } catch (err) {
+                console.error("Error en calcularEstadoCuotasYCapitalizacion:", err);
+                return { diasAtraso: 0, cuotasSinPagar: 0, interesPendienteCalc: 0, sugerirCapitalizacion: false };
+            }
+        }
+
+        function calcularInteresesPendientesNetos(p) {
+            try {
+                if (!p || p.estado !== 'activo') return 0;
+                const saldoCongelado = Number(p.saldoPendienteInteres) || 0;
+                if (p.interesesCongelados) return Math.max(0, saldoCongelado);
+
+                const estado = calcularEstadoCuotasYCapitalizacion(p);
+                return Math.max(0, (Number(estado.interesPendienteCalc) || 0) + saldoCongelado);
+            } catch (err) {
+                console.error("Error en calcularInteresesPendientesNetos:", err);
+                return 0;
+            }
         }
 
         // FUNCIÓN SEGURA PARA CONGELAR/DESCONGELAR INTERESES SIN DAÑAR LAS CUENTAS
@@ -2130,56 +2174,6 @@ async function renderizarPanelAdminMaestro() {
             cerrarModalCapitalizar();
             await cargarDatosUsuario();
             refrescarInterfazActual();
-        }
-
-function calcularFlujoDeCaja() {
-            let total7 = 0;
-            let total15 = 0;
-            let total30 = 0;
-
-            const prestamosActivos = prestamos.filter(p => p.estado === 'activo');
-
-            prestamosActivos.forEach(p => {
-                const interesPeriodo = p.capitalActual * (p.tasaInteres / 100);
-                const cuotaEstimada = (p.capitalActual / 4) + interesPeriodo;
-                
-                const freq = (p.frecuencia || '').toLowerCase();
-
-                if (freq.includes('diario')) {
-                    // En 7 días cobras 7 cuotas, en 15 cobras 15, en 30 cobras 30
-                    total7 += cuotaEstimada * 7;
-                    total15 += cuotaEstimada * 15;
-                    total30 += cuotaEstimada * 30;
-                } else if (freq.includes('semanal')) {
-                    // En 7 días cobras 1 cuota, en 15 cobras 2, en 30 cobras 4
-                    total7 += cuotaEstimada * 1;
-                    total15 += cuotaEstimada * 2;
-                    total30 += cuotaEstimada * 4;
-                } else if (freq.includes('catorcenal') || freq.includes('quincenal')) {
-                    // En 7 días 0 o 1 cuota, en 15 cobras 1, en 30 cobras 2
-                    total7 += cuotaEstimada * 0.5;
-                    total15 += cuotaEstimada * 1;
-                    total30 += cuotaEstimada * 2;
-                } else if (freq.includes('mensual')) {
-                    // En 7 y 15 días aún no vence la cuota completa, en 30 cobras 1
-                    total7 += cuotaEstimada * 0.25;
-                    total15 += cuotaEstimada * 0.50;
-                    total30 += cuotaEstimada * 1;
-                } else {
-                    // Frecuencia por defecto (Semanal)
-                    total7 += cuotaEstimada * 1;
-                    total15 += cuotaEstimada * 2;
-                    total30 += cuotaEstimada * 4;
-                }
-            });
-
-            const el7 = document.getElementById('cashflow-7d');
-            const el15 = document.getElementById('cashflow-15d');
-            const el30 = document.getElementById('cashflow-30d');
-
-            if (el7) el7.textContent = `$${total7.toFixed(2)}`;
-            if (el15) el15.textContent = `$${total15.toFixed(2)}`;
-            if (el30) el30.textContent = `$${total30.toFixed(2)}`;
         }
 
 
@@ -2374,8 +2368,10 @@ function calcularFlujoDeCaja() {
                 `;
                 contenedor.appendChild(card);
             });
+            renderizarGraficoIngresosMensuales();
             lucide.createIcons();
         }
+        
 
         function actualizarSelectClientes() {
             const select = document.getElementById('p-cliente-select');
@@ -3095,6 +3091,179 @@ function mostrarToast(mensaje, tipo = 'success') {
             
             abrirModalRecibo(objetoPagoRecibo, clienteAsociado, nuevoCapital);
         });
+
+        let chartIngresosInstance = null;
+        let rangoSemanasIngresos = 6;
+
+        function cambiarRangoSemanas(semanas) {
+            rangoSemanasIngresos = semanas;
+            const btn6 = document.getElementById('btn-sem-6');
+            const btn12 = document.getElementById('btn-sem-12');
+            if (btn6 && btn12) {
+                const activo = "px-3 py-1 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow-xs transition";
+                const inactivo = "px-3 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition";
+                btn6.className = semanas === 6 ? activo : inactivo;
+                btn12.className = semanas === 12 ? activo : inactivo;
+            }
+            renderizarGraficoIngresosMensuales();
+        }
+
+        function renderizarGraficoIngresosMensuales() {
+            try {
+                const canvas = document.getElementById('graficoIngresos');
+                if (!canvas || typeof Chart === 'undefined') return;
+
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+
+                // Inicio de la semana actual (Lunes)
+                const diaSemanaActual = hoy.getDay();
+                const diffLunes = diaSemanaActual === 0 ? 6 : diaSemanaActual - 1;
+                const inicioSemanaActual = new Date(hoy);
+                inicioSemanaActual.setDate(hoy.getDate() - diffLunes);
+
+                const etiquetas = [];
+                const datosIntereses = [];
+                const datosCapital = [];
+                const datosTotales = [];
+                const listaPagos = Array.isArray(pagos) ? pagos : [];
+
+                for (let i = rangoSemanasIngresos - 1; i >= 0; i--) {
+                    const inicioSem = new Date(inicioSemanaActual);
+                    inicioSem.setDate(inicioSemanaActual.getDate() - (i * 7));
+
+                    const finSem = new Date(inicioSem);
+                    finSem.setDate(inicioSem.getDate() + 6);
+                    finSem.setHours(23, 59, 59, 999);
+
+                    const labelInicio = inicioSem.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                    const labelFin = finSem.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                    etiquetas.push(`${labelInicio} - ${labelFin}`);
+
+                    let sumInteres = 0;
+                    let sumCapital = 0;
+
+                    listaPagos.forEach(pg => {
+                        if (!pg || !pg.fecha) return;
+                        const fPago = typeof parsearFechaLocal === 'function' ? parsearFechaLocal(pg.fecha) : new Date(pg.fecha);
+                        fPago.setHours(12, 0, 0, 0);
+
+                        if (fPago >= inicioSem && fPago <= finSem) {
+                            const monto = Number(pg.monto) || 0;
+                            if (pg.tipo === 'solo_intereses') {
+                                sumInteres += monto;
+                            } else if (pg.tipo === 'abono_capital') {
+                                sumCapital += monto;
+                            } else {
+                                sumInteres += monto;
+                            }
+                        }
+                    });
+
+                    datosIntereses.push(Number(sumInteres.toFixed(2)));
+                    datosCapital.push(Number(sumCapital.toFixed(2)));
+                    datosTotales.push(Number((sumInteres + sumCapital).toFixed(2)));
+                }
+
+                const totalPeriodo = datosTotales.reduce((a, b) => a + b, 0);
+                const totalInteresPeriodo = datosIntereses.reduce((a, b) => a + b, 0);
+                const promedioSemanal = totalPeriodo / rangoSemanasIngresos;
+
+                const elTotal = document.getElementById('kpi-sem-total');
+                const elInt = document.getElementById('kpi-sem-intereses');
+                const elProm = document.getElementById('kpi-sem-promedio');
+
+                if (elTotal) elTotal.textContent = `$${totalPeriodo.toFixed(2)}`;
+                if (elInt) elInt.textContent = `$${totalInteresPeriodo.toFixed(2)}`;
+                if (elProm) elProm.textContent = `$${promedioSemanal.toFixed(2)}`;
+
+                if (chartIngresosInstance) {
+                    chartIngresosInstance.destroy();
+                }
+
+                const ctx = canvas.getContext('2d');
+                chartIngresosInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: etiquetas,
+                        datasets: [
+                            {
+                                label: 'Intereses',
+                                data: datosIntereses,
+                                backgroundColor: '#10b981',
+                                borderRadius: 8,
+                                borderSkipped: false,
+                                maxBarThickness: 28
+                            },
+                            {
+                                label: 'Capital',
+                                data: datosCapital,
+                                backgroundColor: '#4f46e5',
+                                borderRadius: 8,
+                                borderSkipped: false,
+                                maxBarThickness: 28
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                align: 'end',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    boxWidth: 8,
+                                    color: '#64748b',
+                                    font: { size: 11, weight: '600' }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: '#0f172a',
+                                titleColor: '#f8fafc',
+                                bodyColor: '#e2e8f0',
+                                padding: 10,
+                                cornerRadius: 12,
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ` ${ctx.dataset.label}: $${Number(ctx.raw || 0).toFixed(2)}`;
+                                    },
+                                    afterBody: function(items) {
+                                        const idx = items[0].dataIndex;
+                                        return [` Total semana: $${datosTotales[idx].toFixed(2)}`];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                border: { display: false },
+                                ticks: { color: '#64748b', font: { size: 10, weight: '600' } }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                border: { display: false, dash: [4, 4] },
+                                grid: { color: '#f1f5f9' },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: { size: 10 },
+                                    callback: value => '$' + value
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Error al renderizar gráfico semanal:", err);
+            }
+        }
+
+
+        
     </script>
 
 

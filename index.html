@@ -642,8 +642,9 @@
                     </div>
                 </div>
 <!-- ==================== MODAL DETALLE DE MÉTRICAS (KPIs) ==================== -->
-    <div id="modal-detalle-kpi" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3.5 sm:p-4 overflow-y-auto opacity-0 transition-opacity duration-200">
-        <div id="kpi-modal-card" class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto max-h-[85vh] flex flex-col opacity-0 translate-y-3 transition-all duration-200 ease-out">
+<div id="modal-detalle-kpi" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden overflow-y-auto opacity-0 transition-opacity duration-200">
+    <div class="min-h-full w-full flex items-center justify-center p-3.5 sm:p-4">
+        <div id="kpi-modal-card" class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col opacity-0 translate-y-3 transition-all duration-200 ease-out">
             <div class="flex justify-between items-center pb-3.5 border-b border-slate-100 shrink-0">
                 <div class="flex items-center gap-2.5">
                     <div id="kpi-modal-icono-wrap" class="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
@@ -673,6 +674,7 @@
             </div>
         </div>
     </div>
+</div>
 
 
 
@@ -3498,16 +3500,16 @@ let chartIngresosInstance = null;
                 }
             }
 
-            modal.classList.remove('hidden');
-            lista.scrollTop = 0;
             modal.scrollTop = 0;
+            lista.scrollTop = 0;
+            modal.classList.remove('hidden');
+
             if (card) {
                 card.classList.remove('opacity-100', 'translate-y-0');
                 card.classList.add('opacity-0', 'translate-y-3');
             }
             modal.classList.remove('opacity-100');
             modal.classList.add('opacity-0');
-            modal.classList.remove('hidden');
 
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {

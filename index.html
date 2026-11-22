@@ -690,38 +690,60 @@
                 </div>
 
 <!-- Gráfico de Rendimiento Financiero Semanal -->
-                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80">
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80 hover:border-indigo-200/80 transition-all duration-300">
                     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 pb-4 border-b border-slate-100">
-                        <div>
-                            <h3 class="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
-                                <i data-lucide="trending-up" class="w-5 h-5 text-indigo-600"></i> Rendimiento Semanal de Cobranzas
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Flujo de caja por semana: Intereses cobrados vs. Capital recuperado</p>
+                        <div class="flex items-center gap-3">
+                            <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100/80">
+                                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-black text-base sm:text-lg text-slate-900 tracking-tight">Rendimiento Semanal</h3>
+                                <p class="text-[11px] sm:text-xs text-slate-500">Intereses cobrados vs. capital recuperado por semana</p>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/70 self-start sm:self-auto">
-                            <button type="button" onclick="cambiarRangoSemanas(6)" id="btn-sem-6" class="px-3 py-1 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow-xs transition">6 Sem</button>
-                            <button type="button" onclick="cambiarRangoSemanas(12)" id="btn-sem-12" class="px-3 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition">12 Sem</button>
+
+                        <div class="flex items-center gap-1 bg-slate-100/90 p-1 rounded-2xl border border-slate-200/70 self-start sm:self-auto">
+                            <button type="button" onclick="cambiarRangoSemanas(6)" id="btn-sem-6" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-sm transition-all">6 Sem</button>
+                            <button type="button" onclick="cambiarRangoSemanas(12)" id="btn-sem-12" class="px-3 py-1.5 text-xs font-bold rounded-xl text-slate-600 hover:text-slate-900 transition-all">12 Sem</button>
                         </div>
                     </div>
 
-                    <!-- Resumen limpio en 3 métricas clave -->
-                    <div class="grid grid-cols-3 gap-2.5 sm:gap-4 mb-5">
-                        <div class="bg-slate-50/90 border border-slate-200/60 rounded-2xl p-3 sm:p-3.5">
-                            <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total Semanas</span>
-                            <span id="kpi-sem-total" class="text-sm sm:text-lg font-black text-slate-900 mt-0.5 block">$0.00</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                        <div class="bg-gradient-to-br from-slate-50 to-white border border-slate-200/70 rounded-2xl p-3.5 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Cobrado</span>
+                                <span id="kpi-sem-total" class="text-base sm:text-xl font-black text-slate-900 mt-0.5 block">$0.00</span>
+                            </div>
+                            <div class="p-2 bg-slate-100 text-slate-600 rounded-xl">
+                                <i data-lucide="wallet" class="w-4 h-4"></i>
+                            </div>
                         </div>
-                        <div class="bg-emerald-50/50 border border-emerald-200/60 rounded-2xl p-3 sm:p-3.5">
-                            <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-600 block">Intereses</span>
-                            <span id="kpi-sem-intereses" class="text-sm sm:text-lg font-black text-emerald-600 mt-0.5 block">$0.00</span>
+
+                        <div class="bg-gradient-to-br from-emerald-50/70 to-white border border-emerald-200/60 rounded-2xl p-3.5 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">Ganancia (Intereses)</span>
+                                <span id="kpi-sem-intereses" class="text-base sm:text-xl font-black text-emerald-600 mt-0.5 block">$0.00</span>
+                            </div>
+                            <div class="p-2 bg-emerald-100/80 text-emerald-600 rounded-xl">
+                                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            </div>
                         </div>
-                        <div class="bg-indigo-50/50 border border-indigo-200/60 rounded-2xl p-3 sm:p-3.5">
-                            <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 block">Prom. Semanal</span>
-                            <span id="kpi-sem-promedio" class="text-sm sm:text-lg font-black text-indigo-600 mt-0.5 block">$0.00</span>
+
+                        <div class="bg-gradient-to-br from-indigo-50/70 to-white border border-indigo-200/60 rounded-2xl p-3.5 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">Promedio Semanal</span>
+                                <span id="kpi-sem-promedio" class="text-base sm:text-xl font-black text-indigo-600 mt-0.5 block">$0.00</span>
+                            </div>
+                            <div class="p-2 bg-indigo-100/80 text-indigo-600 rounded-xl">
+                                <i data-lucide="calendar-range" class="w-4 h-4"></i>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="w-full h-64">
-                        <canvas id="graficoIngresos"></canvas>
+                    <div class="bg-slate-50/50 border border-slate-100 rounded-2xl p-3 sm:p-4">
+                        <div class="w-full h-64">
+                            <canvas id="graficoIngresos"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -3092,7 +3114,7 @@ function mostrarToast(mensaje, tipo = 'success') {
             abrirModalRecibo(objetoPagoRecibo, clienteAsociado, nuevoCapital);
         });
 
-        let chartIngresosInstance = null;
+let chartIngresosInstance = null;
         let rangoSemanasIngresos = 6;
 
         function cambiarRangoSemanas(semanas) {
@@ -3100,12 +3122,19 @@ function mostrarToast(mensaje, tipo = 'success') {
             const btn6 = document.getElementById('btn-sem-6');
             const btn12 = document.getElementById('btn-sem-12');
             if (btn6 && btn12) {
-                const activo = "px-3 py-1 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow-xs transition";
-                const inactivo = "px-3 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition";
+                const activo = "px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-sm transition-all";
+                const inactivo = "px-3 py-1.5 text-xs font-bold rounded-xl text-slate-600 hover:text-slate-900 transition-all";
                 btn6.className = semanas === 6 ? activo : inactivo;
                 btn12.className = semanas === 12 ? activo : inactivo;
             }
             renderizarGraficoIngresosMensuales();
+        }
+
+        function crearGradienteBarra(ctx, colorArriba, colorAbajo, altura = 240) {
+            const grad = ctx.createLinearGradient(0, 0, 0, altura);
+            grad.addColorStop(0, colorArriba);
+            grad.addColorStop(1, colorAbajo);
+            return grad;
         }
 
         function renderizarGraficoIngresosMensuales() {
@@ -3116,7 +3145,6 @@ function mostrarToast(mensaje, tipo = 'success') {
                 const hoy = new Date();
                 hoy.setHours(0, 0, 0, 0);
 
-                // Inicio de la semana actual (Lunes)
                 const diaSemanaActual = hoy.getDay();
                 const diffLunes = diaSemanaActual === 0 ? 6 : diaSemanaActual - 1;
                 const inicioSemanaActual = new Date(hoy);
@@ -3182,6 +3210,9 @@ function mostrarToast(mensaje, tipo = 'success') {
                 }
 
                 const ctx = canvas.getContext('2d');
+                const gradIntereses = crearGradienteBarra(ctx, 'rgba(16, 185, 129, 0.95)', 'rgba(16, 185, 129, 0.45)');
+                const gradCapital = crearGradienteBarra(ctx, 'rgba(79, 70, 229, 0.92)', 'rgba(99, 102, 241, 0.42)');
+
                 chartIngresosInstance = new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -3190,18 +3221,22 @@ function mostrarToast(mensaje, tipo = 'success') {
                             {
                                 label: 'Intereses',
                                 data: datosIntereses,
-                                backgroundColor: '#10b981',
-                                borderRadius: 8,
+                                backgroundColor: gradIntereses,
+                                hoverBackgroundColor: '#059669',
+                                borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 3, bottomRight: 3 },
                                 borderSkipped: false,
-                                maxBarThickness: 28
+                                barPercentage: 0.78,
+                                categoryPercentage: 0.68
                             },
                             {
                                 label: 'Capital',
                                 data: datosCapital,
-                                backgroundColor: '#4f46e5',
-                                borderRadius: 8,
+                                backgroundColor: gradCapital,
+                                hoverBackgroundColor: '#4338ca',
+                                borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 3, bottomRight: 3 },
                                 borderSkipped: false,
-                                maxBarThickness: 28
+                                barPercentage: 0.78,
+                                categoryPercentage: 0.68
                             }
                         ]
                     },
@@ -3217,23 +3252,27 @@ function mostrarToast(mensaje, tipo = 'success') {
                                     usePointStyle: true,
                                     pointStyle: 'circle',
                                     boxWidth: 8,
-                                    color: '#64748b',
-                                    font: { size: 11, weight: '600' }
+                                    padding: 14,
+                                    color: '#475569',
+                                    font: { size: 11, weight: '700' }
                                 }
                             },
                             tooltip: {
                                 backgroundColor: '#0f172a',
                                 titleColor: '#f8fafc',
                                 bodyColor: '#e2e8f0',
-                                padding: 10,
-                                cornerRadius: 12,
+                                titleFont: { size: 12, weight: '700' },
+                                bodyFont: { size: 11 },
+                                padding: 12,
+                                cornerRadius: 14,
+                                displayColors: true,
                                 callbacks: {
-                                    label: function(ctx) {
-                                        return ` ${ctx.dataset.label}: $${Number(ctx.raw || 0).toFixed(2)}`;
+                                    label: function(context) {
+                                        return ` ${context.dataset.label}: $${Number(context.raw || 0).toFixed(2)}`;
                                     },
                                     afterBody: function(items) {
                                         const idx = items[0].dataIndex;
-                                        return [` Total semana: $${datosTotales[idx].toFixed(2)}`];
+                                        return [`────────────────────`, ` Total semana: $${datosTotales[idx].toFixed(2)}`];
                                     }
                                 }
                             }
@@ -3242,21 +3281,30 @@ function mostrarToast(mensaje, tipo = 'success') {
                             x: {
                                 grid: { display: false },
                                 border: { display: false },
-                                ticks: { color: '#64748b', font: { size: 10, weight: '600' } }
+                                ticks: {
+                                    color: '#64748b',
+                                    font: { size: 10, weight: '600' },
+                                    maxRotation: 0,
+                                    autoSkip: true
+                                }
                             },
                             y: {
                                 beginAtZero: true,
                                 border: { display: false, dash: [4, 4] },
-                                grid: { color: '#f1f5f9' },
+                                grid: { color: '#e2e8f0' },
                                 ticks: {
                                     color: '#94a3b8',
-                                    font: { size: 10 },
+                                    font: { size: 10, weight: '600' },
                                     callback: value => '$' + value
                                 }
                             }
                         }
                     }
                 });
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
             } catch (err) {
                 console.error("Error al renderizar gráfico semanal:", err);
             }

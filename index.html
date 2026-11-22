@@ -642,40 +642,37 @@
                     </div>
                 </div>
 <!-- ==================== MODAL DETALLE DE MÉTRICAS (KPIs) ==================== -->
-<div id="modal-detalle-kpi" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden overflow-y-auto opacity-0 transition-opacity duration-200">
-    <div class="min-h-full w-full flex items-center justify-center p-3.5 sm:p-4">
-        <div id="kpi-modal-card" class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col opacity-0 translate-y-3 transition-all duration-200 ease-out">
-            <div class="flex justify-between items-center pb-3.5 border-b border-slate-100 shrink-0">
-                <div class="flex items-center gap-2.5">
-                    <div id="kpi-modal-icono-wrap" class="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
-                        <i id="kpi-modal-icono" data-lucide="wallet" class="w-5 h-5"></i>
+        <div id="modal-detalle-kpi" class="fixed inset-0 z-50 flex items-center justify-center hidden p-3.5 sm:p-4 opacity-0 transition-opacity duration-200 ease-out">
+            <div id="kpi-modal-card" class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[80vh] flex flex-col opacity-0 translate-y-3 transition-all duration-200 ease-out">
+                <div class="flex justify-between items-center pb-3.5 border-b border-slate-100 shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <div id="kpi-modal-icono-wrap" class="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
+                            <i id="kpi-modal-icono" data-lucide="wallet" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 id="kpi-modal-titulo" class="font-black text-base sm:text-lg text-slate-900">Detalle</h3>
+                            <p id="kpi-modal-subtitulo" class="text-[11px] sm:text-xs text-slate-500">Desglose en tiempo real</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 id="kpi-modal-titulo" class="font-black text-base sm:text-lg text-slate-900">Detalle</h3>
-                        <p id="kpi-modal-subtitulo" class="text-[11px] sm:text-xs text-slate-500">Desglose en tiempo real</p>
-                    </div>
+                    <button type="button" onclick="cerrarModalDetalleKPI()" class="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-2 rounded-xl transition">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
                 </div>
-                <button type="button" onclick="cerrarModalDetalleKPI()" class="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-2 rounded-xl transition">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-            </div>
 
-            <div class="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 my-4 flex justify-between items-center shrink-0">
-                <span id="kpi-modal-resumen-label" class="text-xs font-bold uppercase tracking-wider text-slate-500">Total</span>
-                <span id="kpi-modal-resumen-valor" class="text-lg sm:text-xl font-black text-slate-900">$0.00</span>
-            </div>
+                <div class="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 my-4 flex justify-between items-center shrink-0">
+                    <span id="kpi-modal-resumen-label" class="text-xs font-bold uppercase tracking-wider text-slate-500">Total</span>
+                    <span id="kpi-modal-resumen-valor" class="text-lg sm:text-xl font-black text-slate-900">$0.00</span>
+                </div>
 
-            <div id="kpi-modal-lista" class="space-y-2.5 overflow-y-auto custom-scrollbar pr-1 flex-1 text-xs sm:text-sm"></div>
+                <div id="kpi-modal-lista" class="space-y-2.5 overflow-y-auto custom-scrollbar pr-1 flex-1 text-xs sm:text-sm"></div>
 
-            <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end shrink-0">
-                <button type="button" onclick="cerrarModalDetalleKPI()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">
-                    Cerrar
-                </button>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end shrink-0">
+                    <button type="button" onclick="cerrarModalDetalleKPI()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">
+                        Cerrar
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-</div>
-
 
 
 <!-- Tarjetas de Métricas Principales (Grid Móvil de 2 Columnas) -->
@@ -3353,16 +3350,19 @@ let chartIngresosInstance = null;
 
             modal.classList.remove('opacity-100');
             modal.classList.add('opacity-0');
+
             if (card) {
                 card.classList.remove('opacity-100', 'translate-y-0');
                 card.classList.add('opacity-0', 'translate-y-3');
             }
 
-            setTimeout(() => {
+            if (modal._cierreTimer) clearTimeout(modal._cierreTimer);
+            modal._cierreTimer = setTimeout(() => {
                 modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal._cierreTimer = null;
             }, 200);
         }
-
         function abrirModalDetalleKPI(tipo) {
             const modal = document.getElementById('modal-detalle-kpi');
             const card = document.getElementById('kpi-modal-card');
@@ -3500,15 +3500,46 @@ let chartIngresosInstance = null;
                 }
             }
 
+            if (modal._cierreTimer) {
+                clearTimeout(modal._cierreTimer);
+                modal._cierreTimer = null;
+            }
+
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+
+            window.scrollTo(0, 0);
             modal.scrollTop = 0;
             lista.scrollTop = 0;
-            modal.classList.remove('hidden');
+
+            modal.style.position = 'fixed';
+            modal.style.top = '0px';
+            modal.style.left = '0px';
+            modal.style.right = '0px';
+            modal.style.bottom = '0px';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.maxWidth = 'none';
+            modal.style.maxHeight = 'none';
+            modal.style.overflow = 'hidden';
+            modal.style.backgroundColor = 'rgba(2, 6, 23, 0.55)';
+            modal.style.backdropFilter = 'blur(4px)';
+            modal.style.webkitBackdropFilter = 'blur(4px)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = '99999';
 
             if (card) {
+                card.style.marginTop = '0px';
+                card.style.marginBottom = '0px';
+                card.style.maxHeight = '85vh';
                 card.classList.remove('opacity-100', 'translate-y-0');
                 card.classList.add('opacity-0', 'translate-y-3');
             }
-            modal.classList.remove('opacity-100');
+
+            modal.classList.remove('hidden', 'opacity-100');
             modal.classList.add('opacity-0');
 
             requestAnimationFrame(() => {

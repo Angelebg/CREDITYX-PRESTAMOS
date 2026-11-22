@@ -3363,7 +3363,7 @@ let chartIngresosInstance = null;
             return `${y}-${m}-${d}`;
         }
 
-        function cerrarDetalleDiaCalendario(prestamoId) {
+function cerrarDetalleDiaCalendario(prestamoId) {
             const panelDetalle = document.getElementById(`cal-detalle-dia-${prestamoId}`);
             if (panelDetalle) {
                 panelDetalle.classList.add('hidden');
@@ -3392,24 +3392,24 @@ let chartIngresosInstance = null;
 
             if (esInicio) {
                 filas.push(`
-                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-indigo-50/90 border border-indigo-200/70">
+                    <div class="flex flex-col xs:flex-row sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 p-3 rounded-2xl bg-indigo-50/90 border border-indigo-200/70">
                         <div class="flex items-center gap-2">
                             <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0"></span>
                             <span class="text-xs font-bold text-indigo-950">Inicio del préstamo</span>
                         </div>
-                        <span class="text-[11px] font-bold text-indigo-700">${fechaIso}</span>
+                        <span class="text-[11px] font-bold text-indigo-700 pl-4 sm:pl-0">${fechaIso}</span>
                     </div>
                 `);
             }
 
             if (eventoEsp) {
                 filas.push(`
-                    <div class="flex items-start justify-between gap-2 p-2.5 rounded-xl bg-fuchsia-50/90 border border-fuchsia-200/80">
-                        <div class="flex items-start gap-2">
+                    <div class="flex items-start justify-between gap-2 p-3 rounded-2xl bg-fuchsia-50/90 border border-fuchsia-200/80">
+                        <div class="flex items-start gap-2.5">
                             <span class="w-2.5 h-2.5 rounded-full bg-fuchsia-600 shrink-0 mt-1"></span>
-                            <div>
+                            <div class="space-y-0.5">
                                 <p class="text-xs font-extrabold text-fuchsia-950">${eventoEsp.titulo}</p>
-                                <p class="text-[11px] text-fuchsia-800/90 mt-0.5">${eventoEsp.descripcion}</p>
+                                <p class="text-[11px] text-fuchsia-800/90 leading-relaxed">${eventoEsp.descripcion}</p>
                             </div>
                         </div>
                     </div>
@@ -3418,12 +3418,12 @@ let chartIngresosInstance = null;
 
             if (typeof montoInteres === 'number') {
                 filas.push(`
-                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-50/90 border border-amber-200/80">
-                        <div class="flex items-center gap-2">
+                    <div class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-amber-50/90 border border-amber-200/80">
+                        <div class="flex items-center gap-2.5 min-w-0">
                             <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
-                            <div>
-                                <p class="text-xs font-extrabold text-amber-950">Interés generado del ciclo</p>
-                                <p class="text-[10px] text-amber-700/90">Frecuencia: ${store.frecuenciaLabel} (${store.tasaPct}%)</p>
+                            <div class="min-w-0">
+                                <p class="text-xs font-extrabold text-amber-950 truncate">Interés generado</p>
+                                <p class="text-[11px] text-amber-700/90 truncate">${store.frecuenciaLabel} (${store.tasaPct}%)</p>
                             </div>
                         </div>
                         <span class="text-xs sm:text-sm font-black text-amber-700 shrink-0">+$${montoInteres.toFixed(2)}</span>
@@ -3437,12 +3437,12 @@ let chartIngresosInstance = null;
                     : `${infoPago.cantidad} ${infoPago.cantidad === 1 ? 'abono registrado' : 'abonos registrados'}`;
 
                 filas.push(`
-                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200/80">
-                        <div class="flex items-center gap-2">
+                    <div class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-emerald-50/90 border border-emerald-200/80">
+                        <div class="flex items-center gap-2.5 min-w-0">
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0"></span>
-                            <div>
-                                <p class="text-xs font-extrabold text-emerald-950">Pago registrado</p>
-                                <p class="text-[10px] text-emerald-700/90 capitalize">${detalleAbonos}</p>
+                            <div class="min-w-0">
+                                <p class="text-xs font-extrabold text-emerald-950 truncate">Pago registrado</p>
+                                <p class="text-[11px] text-emerald-700/90 capitalize break-words">${detalleAbonos}</p>
                             </div>
                         </div>
                         <span class="text-xs sm:text-sm font-black text-emerald-700 shrink-0">$${infoPago.total.toFixed(2)}</span>
@@ -3452,22 +3452,22 @@ let chartIngresosInstance = null;
 
             if (filas.length === 0) {
                 filas.push(`
-                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs text-slate-500 flex items-center justify-between gap-2">
-                        <span>Sin pagos, intereses generados ni eventos especiales en esta fecha.</span>
-                        <span class="font-mono text-[11px] text-slate-400">$0.00</span>
+                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 text-xs text-slate-500 flex items-center justify-between gap-2">
+                        <span>Sin movimientos especiales en este día.</span>
+                        <span class="font-mono text-[11px] text-slate-400 shrink-0">$0.00</span>
                     </div>
                 `);
             }
 
             panelDetalle.innerHTML = `
-                <div class="bg-white border border-slate-200 shadow-lg rounded-2xl p-3.5 space-y-2.5 animate-scale-in">
-                    <div class="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
-                        <div>
+                <div class="bg-white border border-slate-200/90 shadow-md rounded-2xl p-3.5 sm:p-4 space-y-2.5 animate-scale-in">
+                    <div class="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-100">
+                        <div class="min-w-0">
                             <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 block">Detalle del Día</span>
-                            <h4 class="text-xs sm:text-sm font-black text-slate-900 capitalize">${fechaLegible}</h4>
+                            <h4 class="text-xs sm:text-sm font-black text-slate-900 capitalize truncate">${fechaLegible}</h4>
                         </div>
                         <button type="button" onclick="cerrarDetalleDiaCalendario(${prestamoId})" class="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-xl transition shrink-0" title="Cerrar detalle">
-                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            <i data-lucide="x" class="w-4 h-4"></i>
                         </button>
                     </div>
                     <div class="space-y-2">
@@ -3516,7 +3516,7 @@ let chartIngresosInstance = null;
 
             const fechaInicio = parsearFechaLocal(fechaInicioStr);
             if (!fechaInicio) {
-                contenedor.innerHTML = `<div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500">No hay fecha de inicio registrada para este préstamo.</div>`;
+                contenedor.innerHTML = `<div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500">No hay fecha de inicio registrada para este préstamo.</div>`;
                 contenedor.dataset.cerrando = '0';
                 contenedor.classList.remove('hidden', 'pointer-events-none');
                 contenedor.classList.add('opacity-0', '-translate-y-2', 'transition-all', 'duration-200', 'ease-out');
@@ -3626,7 +3626,7 @@ let chartIngresosInstance = null;
                 let celdasHTML = '';
 
                 for (let i = 0; i < offsetLunes; i++) {
-                    celdasHTML += `<div class="h-7"></div>`;
+                    celdasHTML += `<div class="h-8 sm:h-7"></div>`;
                 }
 
                 for (let dia = 1; dia <= diasEnMes; dia++) {
@@ -3639,7 +3639,7 @@ let chartIngresosInstance = null;
                     const esInteres = typeof montoInteresDia === 'number';
                     const eventoEsp = mapaEventos.get(key);
 
-                    let clasesDia = 'h-7 w-7 mx-auto rounded-lg flex items-center justify-center text-[11px] font-semibold relative transition cursor-pointer active:scale-95 ';
+                    let clasesDia = 'h-8 w-8 sm:h-7 sm:w-7 mx-auto rounded-xl sm:rounded-lg flex items-center justify-center text-xs sm:text-[11px] font-semibold relative transition cursor-pointer active:scale-95 ';
 
                     if (eventoEsp) {
                         clasesDia += 'bg-fuchsia-600 text-white font-black ring-2 ring-fuchsia-300 shadow-sm hover:bg-fuchsia-700';
@@ -3665,12 +3665,12 @@ let chartIngresosInstance = null;
                 }
 
                 mesesHTML += `
-                    <div class="bg-white border border-slate-200/80 rounded-2xl p-3">
-                        <p class="text-xs font-black capitalize text-slate-800 mb-2 text-center">${nombreMes}</p>
-                        <div class="grid grid-cols-7 gap-1 text-center mb-1">
+                    <div class="bg-white border border-slate-200/80 rounded-2xl p-3.5 sm:p-3 shadow-2xs">
+                        <p class="text-xs font-black capitalize text-slate-800 mb-2.5 sm:mb-2 text-center">${nombreMes}</p>
+                        <div class="grid grid-cols-7 gap-1.5 sm:gap-1 text-center mb-1.5 sm:mb-1">
                             ${diasSemana.map(d => `<span class="text-[10px] font-bold text-slate-400">${d}</span>`).join('')}
                         </div>
-                        <div class="grid grid-cols-7 gap-1 items-center">
+                        <div class="grid grid-cols-7 gap-1.5 sm:gap-1 items-center">
                             ${celdasHTML}
                         </div>
                     </div>
@@ -3680,33 +3680,36 @@ let chartIngresosInstance = null;
             }
 
             contenedor.innerHTML = `
-                <div class="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-3.5 space-y-3">
-                    <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                            <span class="inline-flex items-center gap-1.5 font-semibold text-slate-600">
-                                <span class="w-3 h-3 rounded bg-indigo-600 inline-block"></span>
-                                Inicio: <strong class="text-slate-800">${fechaInicioKey}</strong>
-                            </span>
-                            <span class="inline-flex items-center gap-1.5 font-semibold text-slate-600">
-                                <span class="w-3 h-3 rounded bg-amber-100 border border-amber-300 inline-block"></span>
-                                Interés nuevo (<strong class="text-amber-700">${mapaIntereses.size}</strong> • $${montoInteresCiclo.toFixed(2)}/ciclo)
-                            </span>
-                            <span class="inline-flex items-center gap-1.5 font-semibold text-slate-600">
-                                <span class="w-3 h-3 rounded bg-emerald-100 border border-emerald-400 inline-block"></span>
-                                Pago (<strong class="text-emerald-700">${mapaPagos.size}</strong>)
-                            </span>
-                            <span class="inline-flex items-center gap-1.5 font-semibold text-slate-600">
-                                <span class="w-3 h-3 rounded bg-fuchsia-600 inline-block"></span>
-                                Capitalización / Congelado
-                            </span>
-                        </div>
-                        <button type="button" onclick="toggleCalendarioPrestamo(${prestamoId})" class="text-[11px] font-bold text-slate-500 hover:text-slate-800">
+                <div class="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-3 sm:p-3.5 space-y-3">
+                    <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+                        <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-700">Control de Calendario</span>
+                        <button type="button" onclick="toggleCalendarioPrestamo(${prestamoId})" class="text-[11px] font-bold text-slate-500 hover:text-slate-800 bg-white border border-slate-200/80 px-2.5 py-1 rounded-xl transition">
                             Ocultar
                         </button>
                     </div>
-                    <p class="text-[10px] text-slate-400">Presiona cualquier día del calendario para ver su resumen detallado.</p>
+
+                    <div class="flex flex-wrap gap-1.5 text-[11px]">
+                        <span class="inline-flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1 rounded-xl font-semibold text-slate-700">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0"></span>
+                            Inicio: <strong>${fechaInicioKey}</strong>
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1 rounded-xl font-semibold text-slate-700">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+                            Interés: <strong class="text-amber-700">${mapaIntereses.size}</strong> ($${montoInteresCiclo.toFixed(2)})
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1 rounded-xl font-semibold text-slate-700">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                            Pagos: <strong class="text-emerald-700">${mapaPagos.size}</strong>
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1 rounded-xl font-semibold text-slate-700">
+                            <span class="w-2.5 h-2.5 rounded-full bg-fuchsia-600 shrink-0"></span>
+                            Cap. / Congelado
+                        </span>
+                    </div>
+
+                    <p class="text-[11px] text-slate-500">Toca un día para ver su detalle.</p>
                     <div id="cal-detalle-dia-${prestamoId}" class="hidden"></div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2.5 max-h-80 sm:max-h-72 overflow-y-auto custom-scrollbar pr-0.5 sm:pr-1">
                         ${mesesHTML}
                     </div>
                 </div>
@@ -3725,7 +3728,7 @@ let chartIngresosInstance = null;
 
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
-        
+
         function cerrarModalDetalleKPI() {
             const modal = document.getElementById('modal-detalle-kpi');
             const card = document.getElementById('kpi-modal-card');

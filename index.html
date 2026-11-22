@@ -2518,7 +2518,8 @@ function obtenerDiasPorFrecuencia(frecuencia) {
                 return { nivel: 'bajo', texto: 'Cliente Puntual', clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
             }
         }
- function verExpedienteCliente(id) {
+
+        function verExpedienteCliente(id) {
             clienteSeleccionadoId = id;
             const cliente = clientes.find(c => c.id === id);
             if (!cliente) return;
@@ -2554,21 +2555,25 @@ function obtenerDiasPorFrecuencia(frecuencia) {
                 prestamosActivos.forEach(p => {
                     const intNeto = calcularInteresesPendientesNetos(p);
                     const card = document.createElement('div');
-                    card.className = "border border-slate-200/80 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5";
+                    card.className = "border border-slate-200/80 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 space-y-3";
                     card.innerHTML = `
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="font-bold text-slate-800 text-xs sm:text-base">$${p.capitalActual.toFixed(2)}</span>
-                                <span class="text-[10px] sm:text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full uppercase">${p.frecuencia}</span>
-                                <span class="text-[10px] sm:text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">ACTIVO</span>
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-slate-800 text-xs sm:text-base">$${p.capitalActual.toFixed(2)}</span>
+                                    <span class="text-[10px] sm:text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full uppercase">${p.frecuencia}</span>
+                                    <span class="text-[10px] sm:text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">ACTIVO</span>
+                                </div>
+                                <p class="text-[11px] sm:text-xs text-slate-600">Tasa: ${p.tasaInteres}% | Interés neto: <strong class="${intNeto > 0 ? 'text-amber-600' : 'text-emerald-600'}">$${intNeto.toFixed(2)}</strong></p>
                             </div>
-                            <p class="text-[11px] sm:text-xs text-slate-600">Tasa: ${p.tasaInteres}% | Interés neto: <strong class="${intNeto > 0 ? 'text-amber-600' : 'text-emerald-600'}">$${intNeto.toFixed(2)}</strong></p>
+                            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-between pt-2 md:pt-0 border-t md:border-0 border-slate-200">
+                                <button type="button" onclick="toggleCalendarioPrestamo(${p.id})" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 text-xs font-bold px-2.5 py-1.5 rounded-xl transition inline-flex items-center gap-1"><i data-lucide="calendar-days" class="w-3.5 h-3.5"></i> Calendario</button>
+                                <button onclick="enviarWhatsAppCobro(${p.id})" title="WhatsApp" class="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-xl transition"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
+                                <button onclick="abrirModalPago(${p.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-xs flex items-center gap-1"><i data-lucide="badge-dollar-sign" class="w-3.5 h-3.5"></i> Cobrar</button>
+                                <button onclick="confirmarEliminarPrestamo(${p.id})" title="Eliminar" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/80 p-1.5 rounded-xl text-xs transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
                         </div>
-                        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-between pt-2 md:pt-0 border-t md:border-0 border-slate-200">
-                            <button onclick="enviarWhatsAppCobro(${p.id})" title="WhatsApp" class="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-xl transition"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
-                            <button onclick="abrirModalPago(${p.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-xs flex items-center gap-1"><i data-lucide="badge-dollar-sign" class="w-3.5 h-3.5"></i> Cobrar</button>
-                            <button onclick="confirmarEliminarPrestamo(${p.id})" title="Eliminar" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/80 p-1.5 rounded-xl text-xs transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
+                        <div id="cal-prestamo-${p.id}" class="hidden pt-3 border-t border-slate-200/80"></div>
                     `;
                     listaP.appendChild(card);
                 });
@@ -3342,7 +3347,385 @@ let chartIngresosInstance = null;
                 console.error("Error al renderizar gráfico semanal:", err);
             }
         }
+   
+        function parsearFechaLocal(fechaStr) {
+            if (!fechaStr) return null;
+            const parte = String(fechaStr).slice(0, 10);
+            const [y, m, d] = parte.split('-').map(Number);
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d);
+        }
 
+        function formatearFechaISO(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function cerrarDetalleDiaCalendario(prestamoId) {
+            const panelDetalle = document.getElementById(`cal-detalle-dia-${prestamoId}`);
+            if (panelDetalle) {
+                panelDetalle.classList.add('hidden');
+                panelDetalle.innerHTML = '';
+            }
+        }
+
+        function abrirDetalleDiaCalendario(prestamoId, fechaIso) {
+            const panelDetalle = document.getElementById(`cal-detalle-dia-${prestamoId}`);
+            const store = window._calendarioPrestamoData && window._calendarioPrestamoData[prestamoId];
+            if (!panelDetalle || !store) return;
+
+            const infoPago = store.mapaPagos.get(fechaIso);
+            const montoInteres = store.mapaIntereses.get(fechaIso);
+            const eventoEsp = store.mapaEventos.get(fechaIso);
+            const esInicio = fechaIso === store.fechaInicioKey;
+
+            const fechaLegible = (() => {
+                const f = parsearFechaLocal(fechaIso);
+                return f
+                    ? f.toLocaleDateString('es-VE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+                    : fechaIso;
+            })();
+
+            const filas = [];
+
+            if (esInicio) {
+                filas.push(`
+                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-indigo-50/90 border border-indigo-200/70">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0"></span>
+                            <span class="text-xs font-bold text-indigo-950">Inicio del préstamo</span>
+                        </div>
+                        <span class="text-[11px] font-bold text-indigo-700">${fechaIso}</span>
+                    </div>
+                `);
+            }
+
+            if (eventoEsp) {
+                filas.push(`
+                    <div class="flex items-start justify-between gap-2 p-2.5 rounded-xl bg-fuchsia-50/90 border border-fuchsia-200/80">
+                        <div class="flex items-start gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-fuchsia-600 shrink-0 mt-1"></span>
+                            <div>
+                                <p class="text-xs font-extrabold text-fuchsia-950">${eventoEsp.titulo}</p>
+                                <p class="text-[11px] text-fuchsia-800/90 mt-0.5">${eventoEsp.descripcion}</p>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
+
+            if (typeof montoInteres === 'number') {
+                filas.push(`
+                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-50/90 border border-amber-200/80">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                            <div>
+                                <p class="text-xs font-extrabold text-amber-950">Interés generado del ciclo</p>
+                                <p class="text-[10px] text-amber-700/90">Frecuencia: ${store.frecuenciaLabel} (${store.tasaPct}%)</p>
+                            </div>
+                        </div>
+                        <span class="text-xs sm:text-sm font-black text-amber-700 shrink-0">+$${montoInteres.toFixed(2)}</span>
+                    </div>
+                `);
+            }
+
+            if (infoPago) {
+                const detalleAbonos = Array.isArray(infoPago.items) && infoPago.items.length > 0
+                    ? infoPago.items.map(it => `${String(it.tipo || 'pago').replace('_', ' ')} ($${(Number(it.monto) || 0).toFixed(2)})`).join(' • ')
+                    : `${infoPago.cantidad} ${infoPago.cantidad === 1 ? 'abono registrado' : 'abonos registrados'}`;
+
+                filas.push(`
+                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200/80">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0"></span>
+                            <div>
+                                <p class="text-xs font-extrabold text-emerald-950">Pago registrado</p>
+                                <p class="text-[10px] text-emerald-700/90 capitalize">${detalleAbonos}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs sm:text-sm font-black text-emerald-700 shrink-0">$${infoPago.total.toFixed(2)}</span>
+                    </div>
+                `);
+            }
+
+            if (filas.length === 0) {
+                filas.push(`
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs text-slate-500 flex items-center justify-between gap-2">
+                        <span>Sin pagos, intereses generados ni eventos especiales en esta fecha.</span>
+                        <span class="font-mono text-[11px] text-slate-400">$0.00</span>
+                    </div>
+                `);
+            }
+
+            panelDetalle.innerHTML = `
+                <div class="bg-white border border-slate-200 shadow-lg rounded-2xl p-3.5 space-y-2.5 animate-scale-in">
+                    <div class="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
+                        <div>
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 block">Detalle del Día</span>
+                            <h4 class="text-xs sm:text-sm font-black text-slate-900 capitalize">${fechaLegible}</h4>
+                        </div>
+                        <button type="button" onclick="cerrarDetalleDiaCalendario(${prestamoId})" class="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-xl transition shrink-0" title="Cerrar detalle">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-2">
+                        ${filas.join('')}
+                    </div>
+                </div>
+            `;
+
+            panelDetalle.classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function toggleCalendarioPrestamo(prestamoId, fechaInicioOverride = null, pagosOverride = null) {
+            const contenedor = document.getElementById(`cal-prestamo-${prestamoId}`);
+            if (!contenedor) return;
+
+            if (contenedor._animTimer) {
+                clearTimeout(contenedor._animTimer);
+                contenedor._animTimer = null;
+            }
+
+            const estaAbierto = !contenedor.classList.contains('hidden') && contenedor.dataset.cerrando !== '1';
+
+            if (estaAbierto) {
+                contenedor.dataset.cerrando = '1';
+                contenedor.classList.remove('opacity-100', 'translate-y-0');
+                contenedor.classList.add('opacity-0', '-translate-y-2', 'pointer-events-none');
+
+                contenedor._animTimer = setTimeout(() => {
+                    contenedor.classList.add('hidden');
+                    contenedor.innerHTML = '';
+                    contenedor.dataset.cerrando = '0';
+                    contenedor._animTimer = null;
+                }, 220);
+                return;
+            }
+
+            const listaPrestamos = Array.isArray(prestamos) ? prestamos : [];
+            const listaPagos = Array.isArray(pagos) ? pagos : [];
+            const prestamoObj = listaPrestamos.find(pr => Number(pr.id) === Number(prestamoId));
+
+            const fechaInicioStr = fechaInicioOverride || (prestamoObj ? prestamoObj.fechaInicio : null);
+            const pagosPrestamo = Array.isArray(pagosOverride)
+                ? pagosOverride
+                : listaPagos.filter(pg => Number(pg.prestamoId) === Number(prestamoId));
+
+            const fechaInicio = parsearFechaLocal(fechaInicioStr);
+            if (!fechaInicio) {
+                contenedor.innerHTML = `<div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500">No hay fecha de inicio registrada para este préstamo.</div>`;
+                contenedor.dataset.cerrando = '0';
+                contenedor.classList.remove('hidden', 'pointer-events-none');
+                contenedor.classList.add('opacity-0', '-translate-y-2', 'transition-all', 'duration-200', 'ease-out');
+                requestAnimationFrame(() => {
+                    contenedor.classList.remove('opacity-0', '-translate-y-2');
+                    contenedor.classList.add('opacity-100', 'translate-y-0');
+                });
+                return;
+            }
+
+            const mapaPagos = new Map();
+            let fechaMaxPago = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate());
+
+            pagosPrestamo.forEach(pg => {
+                const fPago = parsearFechaLocal(pg.fecha);
+                if (!fPago) return;
+                const fPagoLimpia = new Date(fPago.getFullYear(), fPago.getMonth(), fPago.getDate());
+                const key = formatearFechaISO(fPagoLimpia);
+                const actual = mapaPagos.get(key) || { total: 0, cantidad: 0, items: [] };
+                const montoNum = Number(pg.monto) || 0;
+                actual.total += montoNum;
+                actual.cantidad += 1;
+                actual.items.push({ monto: montoNum, tipo: pg.tipo });
+                mapaPagos.set(key, actual);
+                if (fPagoLimpia > fechaMaxPago) fechaMaxPago = fPagoLimpia;
+            });
+
+            const hoy = new Date();
+            const fechaHoyLimpia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+            const fechaFin = fechaMaxPago > fechaHoyLimpia ? fechaMaxPago : fechaHoyLimpia;
+
+            const inicioLimpio = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate());
+            const fechaInicioKey = formatearFechaISO(inicioLimpio);
+
+            const diasCiclo = typeof obtenerDiasPorFrecuencia === 'function'
+                ? obtenerDiasPorFrecuencia(prestamoObj ? prestamoObj.frecuencia : 'semanal')
+                : 7;
+            const capitalBase = prestamoObj ? (Number(prestamoObj.capitalActual) || 0) : 0;
+            const tasaPct = prestamoObj ? (Number(prestamoObj.tasaInteres) || 0) : 0;
+            const montoInteresCiclo = capitalBase * (tasaPct / 100);
+            const estaCongelado = Boolean(prestamoObj && prestamoObj.interesesCongelados);
+            const estaFinalizado = Boolean(prestamoObj && prestamoObj.estado === 'finalizado');
+
+            const mapaIntereses = new Map();
+            if (!estaFinalizado && montoInteresCiclo > 0 && diasCiclo > 0) {
+                let cursorInteres = new Date(inicioLimpio.getTime());
+                cursorInteres.setDate(cursorInteres.getDate() + diasCiclo);
+
+                while (cursorInteres <= fechaFin) {
+                    if (estaCongelado) break;
+                    const keyInt = formatearFechaISO(cursorInteres);
+                    mapaIntereses.set(keyInt, montoInteresCiclo);
+                    cursorInteres.setDate(cursorInteres.getDate() + diasCiclo);
+                }
+            }
+
+            const mapaEventos = new Map();
+            if (prestamoObj) {
+                const huboCapitalizacion = Number(prestamoObj.capitalActual) > Number(prestamoObj.capitalInicial);
+                if (huboCapitalizacion) {
+                    mapaEventos.set(fechaInicioKey, {
+                        titulo: 'Préstamo capitalizado',
+                        descripcion: `Capital actualizado a $${capitalBase.toFixed(2)} y ciclo reiniciado en ${fechaInicioKey}.`
+                    });
+                }
+                if (estaCongelado) {
+                    const refCongelado = typeof obtenerFechaUltimoPagoOInicio === 'function'
+                        ? obtenerFechaUltimoPagoOInicio(prestamoObj)
+                        : fechaHoyLimpia;
+                    const keyCong = formatearFechaISO(refCongelado);
+                    const prev = mapaEventos.get(keyCong);
+                    const saldoCong = (Number(prestamoObj.saldoPendienteInteres) || 0).toFixed(2);
+                    mapaEventos.set(keyCong, {
+                        titulo: prev ? `${prev.titulo} • Intereses congelados` : 'Intereses congelados',
+                        descripcion: prev
+                            ? `${prev.descripcion} Intereses congelados en $${saldoCong}.`
+                            : `Generación de intereses pausada con saldo congelado de $${saldoCong}.`
+                    });
+                }
+            }
+
+            window._calendarioPrestamoData = window._calendarioPrestamoData || {};
+            window._calendarioPrestamoData[prestamoId] = {
+                mapaPagos,
+                mapaIntereses,
+                mapaEventos,
+                fechaInicioKey,
+                frecuenciaLabel: (prestamoObj && prestamoObj.frecuencia) ? prestamoObj.frecuencia : 'semanal',
+                tasaPct
+            };
+
+            const diasSemana = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+            let cursorMes = new Date(inicioLimpio.getFullYear(), inicioLimpio.getMonth(), 1);
+            const ultimoMes = new Date(fechaFin.getFullYear(), fechaFin.getMonth(), 1);
+
+            let mesesHTML = '';
+
+            while (cursorMes <= ultimoMes) {
+                const anio = cursorMes.getFullYear();
+                const mes = cursorMes.getMonth();
+                const nombreMes = cursorMes.toLocaleDateString('es-VE', { month: 'long', year: 'numeric' });
+
+                const primerDia = new Date(anio, mes, 1);
+                const offsetLunes = (primerDia.getDay() + 6) % 7;
+                const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+
+                let celdasHTML = '';
+
+                for (let i = 0; i < offsetLunes; i++) {
+                    celdasHTML += `<div class="h-7"></div>`;
+                }
+
+                for (let dia = 1; dia <= diasEnMes; dia++) {
+                    const fechaActual = new Date(anio, mes, dia);
+                    const key = formatearFechaISO(fechaActual);
+                    const esInicio = key === fechaInicioKey;
+                    const infoPago = mapaPagos.get(key);
+                    const esPago = Boolean(infoPago);
+                    const montoInteresDia = mapaIntereses.get(key);
+                    const esInteres = typeof montoInteresDia === 'number';
+                    const eventoEsp = mapaEventos.get(key);
+
+                    let clasesDia = 'h-7 w-7 mx-auto rounded-lg flex items-center justify-center text-[11px] font-semibold relative transition cursor-pointer active:scale-95 ';
+
+                    if (eventoEsp) {
+                        clasesDia += 'bg-fuchsia-600 text-white font-black ring-2 ring-fuchsia-300 shadow-sm hover:bg-fuchsia-700';
+                    } else if (esPago && esInteres) {
+                        clasesDia += 'bg-emerald-600 text-white font-black ring-2 ring-amber-400 shadow-sm hover:bg-emerald-700';
+                    } else if (esPago) {
+                        clasesDia += 'bg-emerald-100 text-emerald-800 border border-emerald-400 font-black hover:bg-emerald-200';
+                    } else if (esInicio && esInteres) {
+                        clasesDia += 'bg-indigo-600 text-white font-black ring-2 ring-amber-300 shadow-sm hover:bg-indigo-700';
+                    } else if (esInicio) {
+                        clasesDia += 'bg-indigo-600 text-white font-black shadow-sm hover:bg-indigo-700';
+                    } else if (esInteres) {
+                        clasesDia += 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold hover:bg-amber-200';
+                    } else {
+                        clasesDia += 'text-slate-600 hover:bg-slate-200/70';
+                    }
+
+                    const puntoIndicador = (esPago && esInteres)
+                        ? `<span class="w-1.5 h-1.5 rounded-full bg-amber-300 absolute -top-0.5 -right-0.5"></span>`
+                        : '';
+
+                    celdasHTML += `<button type="button" onclick="abrirDetalleDiaCalendario(${prestamoId}, '${key}')" class="${clasesDia}">${dia}${puntoIndicador}</button>`;
+                }
+
+                mesesHTML += `
+                    <div class="bg-white border border-slate-200/80 rounded-2xl p-3">
+                        <p class="text-xs font-black capitalize text-slate-800 mb-2 text-center">${nombreMes}</p>
+                        <div class="grid grid-cols-7 gap-1 text-center mb-1">
+                            ${diasSemana.map(d => `<span class="text-[10px] font-bold text-slate-400">${d}</span>`).join('')}
+                        </div>
+                        <div class="grid grid-cols-7 gap-1 items-center">
+                            ${celdasHTML}
+                        </div>
+                    </div>
+                `;
+
+                cursorMes = new Date(anio, mes + 1, 1);
+            }
+
+            contenedor.innerHTML = `
+                <div class="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-3.5 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                            <span class="inline-flex items-center gap-1.5 font-semibold text-slate-600">
+                                <span class="w-3 h-3 rounded bg-indigo-600 inline-block"></span>
+                                Inicio: <strong class="text-slate-800">${fechaInicioKey}</strong>
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 font-semibold text-slate-600">
+                                <span class="w-3 h-3 rounded bg-amber-100 border border-amber-300 inline-block"></span>
+                                Interés nuevo (<strong class="text-amber-700">${mapaIntereses.size}</strong> • $${montoInteresCiclo.toFixed(2)}/ciclo)
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 font-semibold text-slate-600">
+                                <span class="w-3 h-3 rounded bg-emerald-100 border border-emerald-400 inline-block"></span>
+                                Pago (<strong class="text-emerald-700">${mapaPagos.size}</strong>)
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 font-semibold text-slate-600">
+                                <span class="w-3 h-3 rounded bg-fuchsia-600 inline-block"></span>
+                                Capitalización / Congelado
+                            </span>
+                        </div>
+                        <button type="button" onclick="toggleCalendarioPrestamo(${prestamoId})" class="text-[11px] font-bold text-slate-500 hover:text-slate-800">
+                            Ocultar
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-400">Presiona cualquier día del calendario para ver su resumen detallado.</p>
+                    <div id="cal-detalle-dia-${prestamoId}" class="hidden"></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                        ${mesesHTML}
+                    </div>
+                </div>
+            `;
+
+            contenedor.dataset.cerrando = '0';
+            contenedor.classList.remove('hidden', 'opacity-100', 'translate-y-0', 'pointer-events-none');
+            contenedor.classList.add('opacity-0', '-translate-y-2', 'transition-all', 'duration-200', 'ease-out');
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    contenedor.classList.remove('opacity-0', '-translate-y-2');
+                    contenedor.classList.add('opacity-100', 'translate-y-0');
+                });
+            });
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        
         function cerrarModalDetalleKPI() {
             const modal = document.getElementById('modal-detalle-kpi');
             const card = document.getElementById('kpi-modal-card');
